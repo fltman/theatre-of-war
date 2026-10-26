@@ -2491,6 +2491,27 @@
   "hash": "c10db3d18e",
   "lufs_in": -17.6
  },
+ "n.f.black.strike.3": {
+  "file": "n.f.black.strike.3.mp3",
+  "seconds": 2.0,
+  "speaker": "narrator",
+  "hash": "12c51739df",
+  "lufs_in": -17.7
+ },
+ "n.f.black.strike.4": {
+  "file": "n.f.black.strike.4.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "1589c20b45",
+  "lufs_in": -18.3
+ },
+ "n.f.black.strike.5": {
+  "file": "n.f.black.strike.5.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "176c012318",
+  "lufs_in": -18.4
+ },
  "n.f.black.triumph.1": {
   "file": "n.f.black.triumph.1.mp3",
   "seconds": 2.16,
@@ -2504,6 +2525,20 @@
   "speaker": "narrator",
   "hash": "b395aa1aa1",
   "lufs_in": -17.3
+ },
+ "n.f.black.triumph.3": {
+  "file": "n.f.black.triumph.3.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "eb09c20fbf",
+  "lufs_in": -18.1
+ },
+ "n.f.black.triumph.4": {
+  "file": "n.f.black.triumph.4.mp3",
+  "seconds": 2.32,
+  "speaker": "narrator",
+  "hash": "893a8a8804",
+  "lufs_in": -18.5
  },
  "n.f.blue.hold": {
   "file": "n.f.blue.hold.mp3",
@@ -2526,6 +2561,27 @@
   "hash": "eaefb08df2",
   "lufs_in": -17.7
  },
+ "n.f.blue.strike.3": {
+  "file": "n.f.blue.strike.3.mp3",
+  "seconds": 1.92,
+  "speaker": "narrator",
+  "hash": "91c6e90ae3",
+  "lufs_in": -17.1
+ },
+ "n.f.blue.strike.4": {
+  "file": "n.f.blue.strike.4.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "9d52f7780d",
+  "lufs_in": -18.0
+ },
+ "n.f.blue.strike.5": {
+  "file": "n.f.blue.strike.5.mp3",
+  "seconds": 2.08,
+  "speaker": "narrator",
+  "hash": "90b689df2a",
+  "lufs_in": -18.1
+ },
  "n.f.blue.triumph.1": {
   "file": "n.f.blue.triumph.1.mp3",
   "seconds": 2.24,
@@ -2539,6 +2595,20 @@
   "speaker": "narrator",
   "hash": "62f2674faf",
   "lufs_in": -18.2
+ },
+ "n.f.blue.triumph.3": {
+  "file": "n.f.blue.triumph.3.mp3",
+  "seconds": 2.0,
+  "speaker": "narrator",
+  "hash": "fec9502479",
+  "lufs_in": -17.4
+ },
+ "n.f.blue.triumph.4": {
+  "file": "n.f.blue.triumph.4.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "351a257628",
+  "lufs_in": -18.6
  },
  "n.f.green.hold": {
   "file": "n.f.green.hold.mp3",
@@ -2561,6 +2631,27 @@
   "hash": "d42e418c6f",
   "lufs_in": -17.1
  },
+ "n.f.green.strike.3": {
+  "file": "n.f.green.strike.3.mp3",
+  "seconds": 2.0,
+  "speaker": "narrator",
+  "hash": "d87c735d1a",
+  "lufs_in": -17.6
+ },
+ "n.f.green.strike.4": {
+  "file": "n.f.green.strike.4.mp3",
+  "seconds": 2.08,
+  "speaker": "narrator",
+  "hash": "c03033c932",
+  "lufs_in": -17.4
+ },
+ "n.f.green.strike.5": {
+  "file": "n.f.green.strike.5.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "74e2bd5ed2",
+  "lufs_in": -18.2
+ },
  "n.f.green.triumph.1": {
   "file": "n.f.green.triumph.1.mp3",
   "seconds": 2.24,
@@ -2574,6 +2665,20 @@
   "speaker": "narrator",
   "hash": "3f46479d86",
   "lufs_in": -17.5
+ },
+ "n.f.green.triumph.3": {
+  "file": "n.f.green.triumph.3.mp3",
+  "seconds": 2.08,
+  "speaker": "narrator",
+  "hash": "f75a2e32bc",
+  "lufs_in": -17.2
+ },
+ "n.f.green.triumph.4": {
+  "file": "n.f.green.triumph.4.mp3",
+  "seconds": 2.32,
+  "speaker": "narrator",
+  "hash": "7b2ad0c37c",
+  "lufs_in": -17.6
  },
  "n.f.purple.hold": {
   "file": "n.f.purple.hold.mp3",
@@ -2596,6 +2701,27 @@
   "hash": "1f4f9a5a51",
   "lufs_in": -17.8
  },
+ "n.f.purple.strike.3": {
+  "file": "n.f.purple.strike.3.mp3",
+  "seconds": 1.84,
+  "speaker": "narrator",
+  "hash": "d25c716813",
+  "lufs_in": -17.0
+ },
+ "n.f.purple.strike.4": {
+  "file": "n.f.purple.strike.4.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "5af2b85684",
+  "lufs_in": -17.8
+ },
+ "n.f.purple.strike.5": {
+  "file": "n.f.purple.strike.5.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "c814bcb0ab",
+  "lufs_in": -17.9
+ },
  "n.f.purple.triumph.1": {
   "file": "n.f.purple.triumph.1.mp3",
   "seconds": 2.32,
@@ -2609,6 +2735,20 @@
   "speaker": "narrator",
   "hash": "06b7173f2a",
   "lufs_in": -18.3
+ },
+ "n.f.purple.triumph.3": {
+  "file": "n.f.purple.triumph.3.mp3",
+  "seconds": 2.08,
+  "speaker": "narrator",
+  "hash": "88415c836b",
+  "lufs_in": -18.1
+ },
+ "n.f.purple.triumph.4": {
+  "file": "n.f.purple.triumph.4.mp3",
+  "seconds": 2.32,
+  "speaker": "narrator",
+  "hash": "a8b813df59",
+  "lufs_in": -17.9
  },
  "n.f.red.hold": {
   "file": "n.f.red.hold.mp3",
@@ -2631,6 +2771,27 @@
   "hash": "3fccd06be9",
   "lufs_in": -17.2
  },
+ "n.f.red.strike.3": {
+  "file": "n.f.red.strike.3.mp3",
+  "seconds": 1.84,
+  "speaker": "narrator",
+  "hash": "51cae747dd",
+  "lufs_in": -17.0
+ },
+ "n.f.red.strike.4": {
+  "file": "n.f.red.strike.4.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "4cb7388d62",
+  "lufs_in": -17.9
+ },
+ "n.f.red.strike.5": {
+  "file": "n.f.red.strike.5.mp3",
+  "seconds": 2.08,
+  "speaker": "narrator",
+  "hash": "b1151cf049",
+  "lufs_in": -18.3
+ },
  "n.f.red.triumph.1": {
   "file": "n.f.red.triumph.1.mp3",
   "seconds": 2.08,
@@ -2644,6 +2805,20 @@
   "speaker": "narrator",
   "hash": "a8c119601d",
   "lufs_in": -17.0
+ },
+ "n.f.red.triumph.3": {
+  "file": "n.f.red.triumph.3.mp3",
+  "seconds": 2.16,
+  "speaker": "narrator",
+  "hash": "7dbd7fea31",
+  "lufs_in": -17.5
+ },
+ "n.f.red.triumph.4": {
+  "file": "n.f.red.triumph.4.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "228d7439fd",
+  "lufs_in": -17.6
  },
  "n.f.yellow.hold": {
   "file": "n.f.yellow.hold.mp3",
@@ -2666,6 +2841,27 @@
   "hash": "6ba2156cd4",
   "lufs_in": -17.5
  },
+ "n.f.yellow.strike.3": {
+  "file": "n.f.yellow.strike.3.mp3",
+  "seconds": 1.92,
+  "speaker": "narrator",
+  "hash": "01ff2430aa",
+  "lufs_in": -16.9
+ },
+ "n.f.yellow.strike.4": {
+  "file": "n.f.yellow.strike.4.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "ff72a0aab8",
+  "lufs_in": -17.4
+ },
+ "n.f.yellow.strike.5": {
+  "file": "n.f.yellow.strike.5.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "ddadbbb9e9",
+  "lufs_in": -18.0
+ },
  "n.f.yellow.triumph.1": {
   "file": "n.f.yellow.triumph.1.mp3",
   "seconds": 2.32,
@@ -2679,6 +2875,20 @@
   "speaker": "narrator",
   "hash": "529ceeae98",
   "lufs_in": -17.6
+ },
+ "n.f.yellow.triumph.3": {
+  "file": "n.f.yellow.triumph.3.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "2b2da60d06",
+  "lufs_in": -17.4
+ },
+ "n.f.yellow.triumph.4": {
+  "file": "n.f.yellow.triumph.4.mp3",
+  "seconds": 2.24,
+  "speaker": "narrator",
+  "hash": "dc65f7c21c",
+  "lufs_in": -17.8
  },
  "n.held.1": {
   "file": "n.held.1.mp3",
@@ -2736,6 +2946,27 @@
   "hash": "3ff2fe64c9",
   "lufs_in": -18.9
  },
+ "n.intro.10": {
+  "file": "n.intro.10.mp3",
+  "seconds": 2.64,
+  "speaker": "narrator",
+  "hash": "572361a7fe",
+  "lufs_in": -18.2
+ },
+ "n.intro.11": {
+  "file": "n.intro.11.mp3",
+  "seconds": 3.44,
+  "speaker": "narrator",
+  "hash": "1b66e0852e",
+  "lufs_in": -18.4
+ },
+ "n.intro.12": {
+  "file": "n.intro.12.mp3",
+  "seconds": 3.36,
+  "speaker": "narrator",
+  "hash": "f95f60bf78",
+  "lufs_in": -18.9
+ },
  "n.intro.2": {
   "file": "n.intro.2.mp3",
   "seconds": 3.2,
@@ -2770,6 +3001,27 @@
   "speaker": "narrator",
   "hash": "054c393a12",
   "lufs_in": -19.2
+ },
+ "n.intro.7": {
+  "file": "n.intro.7.mp3",
+  "seconds": 3.36,
+  "speaker": "narrator",
+  "hash": "830e968b92",
+  "lufs_in": -18.4
+ },
+ "n.intro.8": {
+  "file": "n.intro.8.mp3",
+  "seconds": 2.0,
+  "speaker": "narrator",
+  "hash": "64dfd2fe19",
+  "lufs_in": -18.1
+ },
+ "n.intro.9": {
+  "file": "n.intro.9.mp3",
+  "seconds": 2.8,
+  "speaker": "narrator",
+  "hash": "19dbb7390b",
+  "lufs_in": -19.3
  },
  "n.jungle.1": {
   "file": "n.jungle.1.mp3",

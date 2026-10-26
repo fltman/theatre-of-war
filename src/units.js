@@ -107,6 +107,8 @@ export function makePiece(kind, faction) {
   });
   o.userData.kind = kind;
   o.userData.gltf = !!templates[kind]?.userData.gltf;
+  // inte alla soldater har mustasch
+  if (kind === 'infantry') { const m = node(o, 'moustache'); if (m) m.visible = Math.random() < 0.55; }
   return o;
 }
 

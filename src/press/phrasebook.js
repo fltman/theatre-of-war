@@ -287,6 +287,12 @@ many('n.intro', 'narrator', 'n.intro', [
   'Atlas Newsreel, first with the pictures!',
   'The world at war, brought to you by Atlas Newsreel!',
   'Atlas Newsreel! The pictures everyone is talking about!',
+  'Atlas Newsreel, your window on the war!',
+  'Atlas Newsreel is there!',
+  'Fresh from the front, Atlas Newsreel!',
+  'Atlas Newsreel goes to war!',
+  'Hold on to your seats! It’s Atlas Newsreel!',
+  'Atlas Newsreel! Pictures from the battlefield!',
 ], '[excited]');
 const NAR = {
   battle: ['The guns roar day and night!', 'Shells rain down on the enemy positions!', 'The tanks roll forward through fire and smoke!',
@@ -317,12 +323,18 @@ many('n.close', 'narrator', 'n.close', ['And so the war goes on!', 'Where will t
 for (const t of TERRITORIES) add(`n.t:${t.id}`, 'narrator', `n.t.${t.id}`, `The battle for ${t.ref || (t.the ? 'the ' : '') + t.name}!`, '[excited]');
 for (const f of FACTIONS) {
   const army = f.army || `the ${f.name} Army`;
-  const N = (kind, n, text) => add(`n.f.${kind}:${f.id}`, 'narrator', `n.f.${f.id}.${kind}${n ? '.' + n : ''}`, text, '[excited]');
+  const N = (kind, n, text, tag = '[excited]') => add(`n.f.${kind}:${f.id}`, 'narrator', `n.f.${f.id}.${kind}${n ? '.' + n : ''}`, text, tag);
   N('strike', 1, `${cap(army)} strikes!`);
   N('strike', 2, `Forward goes ${army}!`);
   N('hold', 0, `But ${army} stands firm!`);
   N('triumph', 1, `Victory for ${army}!`);
   N('triumph', 2, `A triumph for ${army}!`);
+  // Tillägg 2026-10-26 (fler varianter mot upprepning): utan tagg – korta utrop, rösten är bombastisk ändå.
+  N('strike', 3, `${cap(army)} attacks!`, null);
+  N('strike', 4, `On rolls ${army}!`, null);
+  N('strike', 5, `${cap(army)} breaks through!`, null);
+  N('triumph', 3, `Glory for ${army}!`, null);
+  N('triumph', 4, `${cap(army)} wins the day!`, null);
 }
 for (const c of CONTINENTS) {
   add(`n.c:${c.id}`, 'narrator', `n.c.${c.id}.1`, `The fate of ${c.name} is sealed!`, '[excited]');

@@ -420,6 +420,8 @@ def full(only=None):
         todo.append(l)
     estimate = sum(len(l["say"]) for l in todo)
     print(f"{len(todo)} repliker att spela in, {estimate} tecken (≈ {estimate} krediter); återanvänder {len(log['reused'])}")
+    if int(os.environ.get("VOICE_CAP", "0")) and estimate > int(os.environ["VOICE_CAP"]):
+        sys.exit(f"Uppskattningen {estimate} är över taket VOICE_CAP={os.environ['VOICE_CAP']} – inget spelas in.")
     spent = 0
     done = 0
     aborted = None
@@ -437,7 +439,8 @@ def full(only=None):
             if done % 50 == 0 or done == len(todo):
                 actual = credits_since(t0)
                 print(f"  {done}/{len(todo)} klara, {actual} krediter hittills (förväntat {spent})")
-                if actual is not None and (actual > spent * 1.15 + 300 or actual > estimate * 1.15):
+                cap = int(os.environ.get("VOICE_CAP", "0"))
+                if actual is not None and (actual > spent * 1.15 + 300 or actual > estimate * 1.15 or (cap and actual > cap)):
                     aborted = f"kostnaden {actual} ligger mer än 15 % över förväntat ({spent})"
                     for g in futs:
                         g.cancel()
@@ -452,6 +455,17 @@ def full(only=None):
         if raw.exists() and raw.stat().st_size > 0:
             if check(l, raw)["problems"]:
                 bad.append(l)
+    cap = int(os.environ.get("VOICE_CAP", "0"))  # hårt tak i krediter för hela körningen (0 = inget)
+    if bad and not aborted and cap:
+        room = cap - (credits_since(t0) or spent)
+        keep_bad, used = [], 0
+        for l in bad:
+            if used + len(l["say"]) <= room:
+                keep_bad.append(l)
+                used += len(l["say"])
+        if len(keep_bad) < len(bad):
+            print(f"taket {cap}: gör bara om {len(keep_bad)} av {len(bad)} misstänkta")
+        bad = keep_bad
     if bad and not aborted:
         print(f"{len(bad)} misstänkta tagningar görs om:", ", ".join(l["id"] for l in bad))
         for l in bad:

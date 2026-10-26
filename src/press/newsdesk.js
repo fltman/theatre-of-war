@@ -511,7 +511,13 @@ export class Newsdesk {
     const isOpen = (l) => /^open\./.test(l.id), isClose = (l) => /^close/.test(l.id), isColor = (l) => /^color/.test(l.id);
     const core = L.filter((l) => !isOpen(l) && !isClose(l) && !isColor(l));
     if (core.length) {
-      L = L.filter((l) => (isOpen(l) ? this.random() < 0.5 : isClose(l) ? this.random() < 0.35 : isColor(l) ? this.random() < 0.5 : true));
+      const all = L;
+      L = all.filter((l) => (isOpen(l) ? this.random() < 0.5 : isClose(l) ? this.random() < 0.35 : isColor(l) ? this.random() < 0.5 : true));
+      // aldrig en ensam rad: då kommer en av de bortlottade tillbaka (öppningen hellre än avslutningen)
+      if (L.length < 2 && all.length >= 2) {
+        const back = all.find((l) => isOpen(l) && !L.includes(l)) ?? all.find((l) => !L.includes(l));
+        L = all.filter((l) => L.includes(l) || l === back);
+      }
     }
     return { station: K.STATION, lines: L };
   }

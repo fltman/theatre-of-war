@@ -255,7 +255,9 @@ test('variation: ett 20-rundorskrig låter inte upprepat', () => {
     for (const s of heard) {
       const ls = s.medium === 'tv' ? s.tv.narration : s.radio.lines;
       const key = ls.map((l) => l.id).join('|');
-      assert.ok(!seqs.has(key), `${seed}: samma sändning två gånger`);
+      // radio() lämnar aldrig en ensam rad, så ingen sändning (av två eller fler repliker) får upprepas
+      if (s.medium === 'radio') assert.ok(ls.length >= 2, `${seed}: enradig sändning (${key})`);
+      assert.ok(!seqs.has(key), `${seed}: samma sändning två gånger (${key})`);
       seqs.add(key);
       for (const l of ls) uses[l.id] = (uses[l.id] || 0) + 1;
     }

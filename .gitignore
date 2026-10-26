@@ -9,3 +9,4 @@ vault/
 server/data/
 blender/__pycache__/
 progress/
+tools/__pycache__/

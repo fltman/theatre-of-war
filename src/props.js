@@ -50,6 +50,10 @@ export class Props {
   }
 
   setupLamp() {
+    // skärmens opalglas lyser varmt inifrån
+    this.lamp?.traverse((m) => {
+      if (m.isMesh && /^Opal/.test(m.material?.name ?? '')) { m.material = m.material.clone(); m.material.emissive = new THREE.Color(0xfff0d0); m.material.emissiveIntensity = 1.4; }
+    });
     const bulb = this.lamp && node(this.lamp, 'bulb');
     if (!bulb) return;
     const l = new THREE.PointLight(0xffc27a, 6, 9, 2);
