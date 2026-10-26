@@ -14,15 +14,16 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 
 // Kontraktet: noder som måste finnas, material som måste ha UV, vertexfärg, tris-tak.
 const NEED = {
-  infantry: { nodes: ['infantry'], uv: ['Base'], colors: true, max: 3000 },
+  infantry: { nodes: ['infantry', 'moustache'], uv: ['Base'], colors: true, max: 3000 },
   tank: { nodes: ['hull', 'turret', 'barrel', 'tracks'], uv: ['Tread'], parent: { barrel: 'turret' }, colors: true, max: 5000 },
   artillery: { nodes: ['carriage', 'barrel'], uv: [], colors: true, max: 4000 },
   ship: { nodes: ['hull', 'funnel', 'smoke'], uv: [], colors: true, max: 7000 },
   flag: { nodes: ['pin', 'flag'], uv: ['FlagPaper'], colors: true },
   dice: { nodes: ['dice'], mats: ['DiceBody', 'Pip'] },
-  radio: { nodes: ['dial', 'needle', 'knob_l', 'knob_r', 'cam'], uv: ['DialGlass'] },
-  tv: { nodes: ['screen', 'cam'], uv: ['Screen'], prefix: ['knob_'] },
-  props: { nodes: ['lamp', 'bulb', 'ashtray', 'smoke', 'phone', 'cup', 'rake', 'inkwell'], uv: [] },
+  radio: { nodes: ['dial', 'needle', 'knob_l', 'knob_r', 'cam'], uv: ['DialGlass'], max: 30000 },
+  tv: { nodes: ['screen', 'cam'], uv: ['Screen'], prefix: ['knob_'], max: 30000 },
+  props: { nodes: ['lamp', 'bulb', 'ashtray', 'smoke', 'phone', 'dial', 'handset', 'cup', 'rake', 'inkwell'], uv: [],
+           parent: { dial: 'phone', handset: 'phone' } },
 };
 
 let fail = 0;

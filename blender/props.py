@@ -263,7 +263,7 @@ def knob3(name, center, r, depth, material, ring_mat=None, print_mat=None, ticks
     """Räfflad ratt med visarstreck; valfri kjol (skirt) med tryckta skalstreck. Axeln pekar framåt (-Y)."""
     parts = [knurled(name, r, depth, material, ridges=40)]
     if ring_mat:
-        parts.append(torus(name + "_ring", (0, 0, depth * 0.03), r * 1.12, r * 0.07, ring_mat, seg=48, rseg=8))
+        parts.append(torus(name + "_ring", (0, 0, depth * 0.03), r * 1.12, r * 0.07, ring_mat, seg=36, rseg=6))
     if skirt_mat:
         parts.append(lathe(name + "_skirt", [(r * 1.05, -0.002), (r * 1.55, -0.002), (r * 1.6, 0.01),
                                              (r * 1.5, depth * 0.18), (r * 1.05, depth * 0.2)], seg=48,
@@ -434,7 +434,7 @@ def tv():
     gx = 2.0
     knobs = [((gx, y0, 1.95), 0.75), ((gx, y0, 1.24), 0.5), ((gx, y0, 0.8), 0.4)]
     mats.wood_worn("TvWood", "rosewood_veneer1", tint="#a35a33", scale=1.6, darken=1.2, gloss=0.18, rot=(0, 90, 0),
-                   knobs=knobs, burns=[((-1.75, -1.95, 5.0), 75, 0.24, 0.05)], bleach=0.75)
+                   knobs=knobs, burns=[((-1.75, -1.95, 5.0), 75, 0.24, 0.05)], bleach=0.4)
     mats.bakelite_worn("TvBakelite", color="#17100b", prints=[(gx + 0.1, y0 - 0.1, 2.15), (gx - 0.15, y0 - 0.1, 1.2)])
     mats.brass_worn("TvBrass", prints=[(gx, y0 - 0.04, 2.5), (-1.8, y0 - 0.04, 4.15)])
     mats.ivory_worn("TvIvory", "#e8dab8")
@@ -541,7 +541,7 @@ def tv():
             P.append(cyl("tape", tuple(tp - d * 0.07), tuple(tp + d * 0.07), 0.042, seg=14, material="Tape",
                          bevel=0.006))
     P.append(twisted_cord("cord", [(1.0, 2.27, 2.0), (1.1, 2.6, 1.0), (1.3, 3.0, 0.04), (2.2, 3.4, 0.04)], 0.045,
-                          "TvCord", pitch=0.12))
+                          "TvCord", pitch=0.13, per_pitch=4, seg=5))
     cab = finish(P, "tv", 40)
 
     grille = plate("grille", rounded_rect(0.8, 2.0, 0.08, n=4, cx=gx, cy=3.45), y0 - 0.012, "TvCloth",

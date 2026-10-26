@@ -22,7 +22,7 @@ npm test
 
 - **Code:** [MIT](LICENSE).
 - **Game media** — models, textures, map artwork, voices, music, newsreel clips and the newsroom's copy:
-  [CC BY 4.0](LICENSE-ASSETS.md) (credit "Theatre of War by Anders Bjarby").
+  [CC BY-NC 4.0](LICENSE-ASSETS.md) — non-commercial use with credit ("Theatre of War by Anders Bjarby").
 - **Third-party:** map data from Natural Earth (public domain), source textures from Poly Haven (CC0), fonts under
   their own licences in `public/fonts/`.
 - Voices made with ElevenLabs, music with Suno, newsreel footage with Google Flow (Veo).

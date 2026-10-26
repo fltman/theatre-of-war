@@ -1,9 +1,10 @@
 # Asset licence
 
 **Original game media © 2026 Anders Bjarby, licensed under
-[Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).**
-You may share and adapt it for any purpose, including commercially, as long as you give appropriate credit
+[Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).**
+You may share and adapt it for non-commercial purposes, as long as you give appropriate credit
 ("Theatre of War by Anders Bjarby"), link to the licence and indicate if changes were made.
+Commercial use of the media requires written permission — contact the author.
 
 This covers:
 

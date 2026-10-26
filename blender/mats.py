@@ -835,7 +835,7 @@ def wood_worn(name, tid, tint, scale, darken, gloss, rot=(0, 0, 0), sat=1.0, kno
     nb = t.ramp(t.noise(t.coords(1.2), 3, 3, 0.5), 0.2, 0.8)
     # solblekt ovansida: ljusare, gråare, mattare lack
     bl = t.math("MULTIPLY", t.math("MULTIPLY", upm, nb), bleach)
-    faded = t.mix(0.55, t.hsv(col, s=0.5, v=1.25), srgb("#9c7a56"))  # blekt lack drar mot gråbrun, inte rosa
+    faded = t.mix(0.6, t.hsv(col, s=0.45, v=1.1), srgb("#7d6046"))  # blekt lack drar mot gråbrun, inte rosa
     col = t.mix(bl, col, faded)
     # repor: tätare och synligare på ovansidan
     scr = t.ramp(t.bw(t.image("lacquered_cherry_wood", "Rough", t.coords(1.0 / (scale * 1.3), (0, 0, 37)),
