@@ -91,8 +91,11 @@ class Tree:
     def ramp(self, fac, a, b):
         """Linjär map range fac från [a, b] till [0, 1], klämd."""
         node = self.n("ShaderNodeMapRange", clamp=True)
-        node.inputs["From Min"].default_value = a
-        node.inputs["From Max"].default_value = b
+        for sock, v in (("From Min", a), ("From Max", b)):
+            if isinstance(v, (int, float)):
+                node.inputs[sock].default_value = v
+            else:
+                self.l(v, node.inputs[sock])
         self.l(fac, node.inputs["Value"])
         return node.outputs["Result"]
 
@@ -452,6 +455,10 @@ def special(name):
         t.set(srgb("#ff5a14"), 0.9, 0.0)
         b.inputs["Emission Color"].default_value = srgb("#ff6a1a")
         b.inputs["Emission Strength"].default_value = 6.0
+    elif name == "Opal":
+        t.set(srgb("#f6efe0"), 0.25, 0.0)
+        b.inputs["Emission Color"].default_value = srgb("#ffe6bf")
+        b.inputs["Emission Strength"].default_value = 1.6
     elif name == "Bulb":
         t.set(srgb("#fff2d6"), 0.2, 0.0)
         b.inputs["Emission Color"].default_value = srgb("#ffd9a0")
@@ -881,14 +888,15 @@ def wood_worn(name, tid, tint, scale, darken, gloss, rot=(0, 0, 0), sat=1.0, kno
     return m
 
 
-def bakelite_worn(name, color="#1e130d", mottle="#3a2416", scale=0.3, gloss=0.12, prints=()):
+def bakelite_worn(name, color="#1e130d", mottle="#3a2416", scale=0.3, gloss=0.12, prints=(), dust_amt=0.8, chips=1.0):
     """Bakelit: djup glans med marmorering, kantstötta flisor (ljusare, matta, gropiga), repor, fingeravtryck, damm."""
     m, t = fresh(name)
     v = t.coords(1.0 / scale)
     swirl = t.ramp(t.noise(v, 3.5, 8, 0.7, dist=1.2), 0.45, 0.75)
     col = t.mix(t.math("MULTIPLY", swirl, 0.55), srgb(color), srgb(mottle))
     w = t.wear(v, 0.012, 1.0)
-    chip = t.math("MULTIPLY", t.edge(0.012), t.ramp(t.noise(t.coords(40.0), 4, 6, 0.7), 0.66, 0.72))
+    chip = t.math("MULTIPLY", t.math("MULTIPLY", t.edge(0.012), t.ramp(t.noise(t.coords(40.0), 4, 6, 0.7), 0.66, 0.72)),
+                  chips)
     col = t.mix(t.math("MULTIPLY", w, 0.5), col, srgb("#5b3a22"))
     col = t.mix(chip, col, srgb("#6e4a2e"))
     scr = t.bw(t.image("lacquered_cherry_wood", "Rough", t.coords(1.0 / (scale * 1.4), (0, 30, 12)), color=False))
@@ -898,7 +906,7 @@ def bakelite_worn(name, color="#1e130d", mottle="#3a2416", scale=0.3, gloss=0.12
     if prints:
         fp = fingerprints(t, prints, 0.06)
         rough = t.mixf(t.math("MULTIPLY", fp, 0.8), rough, 0.4)
-    col, rough, _ = dust(t, col, rough, 0.8)
+    col, rough, _ = dust(t, col, rough, dust_amt)
     h = t.math("ADD", t.math("MULTIPLY", scr, 0.05), t.math("MULTIPLY", chip, -1.0))
     t.set(col, rough, 0.0, t.bump(h, 0.2, 0.002))
     return m
@@ -1085,4 +1093,135 @@ def grime_overlay(name, path):
         m.surface_render_method = "BLENDED"
     except AttributeError:
         m.blend_method = "BLEND"
+    return m
+
+
+def ember_tex(name):
+    """Glöd: mörk aska som bas, emissiv textur med glödande prickar (build/tex/ember.png). Bakas inte."""
+    SPECIAL.add(name)
+    m, t = fresh(name)
+    im = bpy.data.images.load(os.path.join(lib.ROOT, "build", "tex", "ember.png"))
+    node = t.n("ShaderNodeTexImage", image=im)
+    uv = t.n("ShaderNodeUVMap", uv_map="UVMap")
+    t.l(uv.outputs["UV"], node.inputs["Vector"])
+    t.bsdf.inputs["Base Color"].default_value = srgb("#2e2a27")
+    t.bsdf.inputs["Roughness"].default_value = 0.9
+    t.l(node.outputs["Color"], t.bsdf.inputs["Emission Color"])
+    t.bsdf.inputs["Emission Strength"].default_value = 5.0
+    return m
+
+
+def porcelain_worn(name, color="#efe5cf", drip=None, ring=None, z_saucer=0.13):
+    """Elfenbensvitt porslin med krakelerad glasyr, kafferand som runnit ned på utsidan (drip = (vinkel, z_topp,
+    z_botten)), kaffering på fatet (ring = (center, r)) och damm."""
+    m, t = fresh(name)
+    v = t.coords(8.0)
+    n = t.noise(v, 3, 3, 0.5)
+    col = t.mix(t.math("MULTIPLY", t.ramp(n, 0.4, 0.8), 0.2), srgb(color), srgb("#ddcfb2"))
+    # krakelering: fint nät av mörkare linjer i glasyren
+    vor = t.n("ShaderNodeTexVoronoi", feature="DISTANCE_TO_EDGE", inputs={"Scale": 55.0, "Randomness": 1.0})
+    t.l(objco(t), vor.inputs["Vector"])
+    craze = t.math("MULTIPLY", t.math("SUBTRACT", 1.0, t.ramp(vor.outputs["Distance"], 0.0, 0.025)),
+                   t.ramp(t.noise(objco(t), 4.0, 2, 0.5), 0.35, 0.65))
+    col = t.mix(t.math("MULTIPLY", craze, 0.35), col, srgb("#8d7a5c"))
+    col = t.mix(t.math("MULTIPLY", t.cavity(0.03), 0.5), col, srgb("#8c7c60"))
+    rough = t.math("ADD", 0.06, t.math("MULTIPLY", craze, 0.15))
+    h = t.math("MULTIPLY", craze, -0.4)
+    if drip:
+        ang, z_top, z_bot = drip
+        lv = local(t, (0, 0, 0), ang, (1, 1, 1))
+        sep = t.n("ShaderNodeSeparateXYZ")
+        t.l(lv, sep.inputs["Vector"])
+        # rännilen: smal i y, ute på koppens utsida (x > 0,3), ojämn nedre ände
+        zz = sep.outputs["Z"]
+        wob = t.math("MULTIPLY", t.noise(objco(t), 18.0, 3, 0.5), 0.06)
+        width = t.math("ADD", 0.025, t.math("MULTIPLY", t.ramp(zz, z_bot, z_top), 0.02))
+        ym = t.math("SUBTRACT", 1.0, t.ramp(t.math("ABSOLUTE", t.math("ADD", sep.outputs["Y"], t.math("MULTIPLY", wob, 0.3))),
+                                              0.0, width))
+        zm = t.ramp(zz, z_bot, z_bot + 0.04)
+        outside = t.ramp(sep.outputs["X"], 0.3, 0.36)
+        dm = t.math("MULTIPLY", t.math("MULTIPLY", ym, zm), outside)
+        dm = t.math("MULTIPLY", dm, t.math("SUBTRACT", 1.0, t.ramp(zz, z_top, z_top + 0.005)))
+        col = t.mix(t.math("MULTIPLY", dm, 0.85), col, srgb("#4a2a12"))
+        rough = t.mixf(dm, rough, 0.12)
+    if ring:
+        c, r = ring
+        sep2 = t.n("ShaderNodeSeparateXYZ")
+        t.l(objco(t), sep2.inputs["Vector"])
+        low = t.math("SUBTRACT", 1.0, t.ramp(sep2.outputs["Z"], z_saucer - 0.02, z_saucer))
+        rm = t.math("MULTIPLY", ring_mask(t, c, r, 0.018), low)
+        col = t.mix(t.math("MULTIPLY", rm, 0.8), col, srgb("#5a3418"))
+        rough = t.mixf(rm, rough, 0.35)
+    col, rough, _ = dust(t, col, rough, 0.4)
+    t.set(col, rough, 0.0, t.bump(h, 0.15, 0.001))
+    return m
+
+
+def bisque(name):
+    """Oglaserat porslin (kantstött hack): kritvitt, matt, kornigt."""
+    m, t = fresh(name)
+    n = t.noise(t.coords(200.0), 6, 4, 0.6)
+    t.set(t.mix(t.math("MULTIPLY", n, 0.3), srgb("#f2ece0"), srgb("#c9bfae")), 0.85, 0.0, t.bump(n, 0.4, 0.001))
+    return m
+
+
+def blotter(name, blots=()):
+    """Läskunderlägg: grönt läskpapper med bläckfläckar och avtorkade pennstreck, läderhörn."""
+    m, t = fresh(name)
+    v = t.coords(6.0)
+    n = t.noise(v, 6, 6, 0.6)
+    col = t.mix(t.math("MULTIPLY", t.ramp(n, 0.3, 0.8), 0.35), srgb("#3f5a3a"), srgb("#6b7d58"))
+    ink = None
+    for (c, r) in blots:
+        d = t.n("ShaderNodeVectorMath", operation="DISTANCE")
+        t.l(objco(t), d.inputs[0])
+        d.inputs[1].default_value = c
+        nn = t.math("MULTIPLY", t.noise(objco(t), 9.0, 4, 0.6), r * 0.8)
+        b = t.math("SUBTRACT", 1.0, t.ramp(t.math("ADD", d.outputs["Value"], nn), r * 0.6, r))
+        ink = b if ink is None else t.math("MAXIMUM", ink, b)
+    # avtorkade streck (pennan torkad mot pappret)
+    wave = t.n("ShaderNodeTexWave", wave_type="BANDS", bands_direction="X",
+               inputs={"Scale": 3.0, "Distortion": 8.0, "Detail": 2.0})
+    t.l(t.coords(1.0, (0, 0, 35)), wave.inputs["Vector"])
+    strokes = t.math("MULTIPLY", t.ramp(wave.outputs["Fac"], 0.92, 1.0), t.ramp(n, 0.55, 0.75))
+    ink = strokes if ink is None else t.math("MAXIMUM", ink, strokes)
+    col = t.mix(t.math("MULTIPLY", ink, 0.9), col, srgb("#10142a"))
+    t.set(col, t.mixf(ink, 0.95, 0.4), 0.0, t.bump(n, 0.2, 0.002))
+    return m
+
+
+def felt(name, color="#2f4a2c"):
+    m, t = fresh(name)
+    n = t.noise(t.coords(120.0), 6, 6, 0.6)
+    col = t.mix(t.math("MULTIPLY", n, 0.25), srgb(color), srgb("#1c2a1a"))
+    col, rough, _ = dust(t, col, 0.97, 0.6)
+    t.set(col, rough, 0.0, t.bump(n, 0.3, 0.001))
+    return m
+
+
+def ink_crust(t, col, rough, z0, z1):
+    """Intorkat bläck vid ett lock: svart, blankt skorpa i höjdbandet z0–z1, uppbruten av brus."""
+    sep = t.n("ShaderNodeSeparateXYZ")
+    t.l(objco(t), sep.inputs["Vector"])
+    band = t.math("MULTIPLY", t.ramp(sep.outputs["Z"], z0, z0 + 0.01),
+                  t.math("SUBTRACT", 1.0, t.ramp(sep.outputs["Z"], z1 - 0.01, z1)))
+    m = t.math("MULTIPLY", band, t.ramp(t.noise(objco(t), 30.0, 4, 0.6), 0.45, 0.6))
+    return t.mix(m, col, srgb("#07081a")), t.mixf(m, rough, 0.08), m
+
+
+def variant(src, name, transmission=0.0, emission=None, strength=0.0):
+    """Kopia av ett bakat glTF-material (samma texturer) med transmission/emission – t.ex. lampans gröna glas,
+    som bakas med damm i atlasen men exporteras genomskinligt."""
+    SPECIAL.add(name)
+    old = bpy.data.materials.get(name)
+    if old:
+        old.name = name + "_old"
+    m = src.copy()
+    m.name = name
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Transmission Weight"].default_value = transmission
+    b.inputs["IOR"].default_value = 1.5
+    if emission:
+        b.inputs["Emission Color"].default_value = srgb(emission)
+        b.inputs["Emission Strength"].default_value = strength
     return m

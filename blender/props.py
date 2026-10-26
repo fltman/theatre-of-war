@@ -566,12 +566,15 @@ def tv():
 # ======================================================================= rekvisitan
 
 def lamp():
-    """Bankirlampa: mässingsfot i två steg, böjd stång, grön glasskärm med vit opalinsida, glödlampa, dragkedja."""
-    mats.brass("LampBrass", polish=0.7, patina=0.6)
-    mats.opal("LampOpal")
-    mats.rubber_cord("LampCord", "#2a2420")
-    mats.painted("LampFelt", "#1f3a26", rough=0.95, wear=0.0)
-    for s in ("GreenGlass", "Bulb"):
+    """Bankirlampa: mässingsfot i två steg med patina, böjd stång, grön glasskärm (damm ovanpå, bakat) med varm
+    vit opal på insidan (emissiv), glödlampa, dragkedja. Returnerar (kropp, skärm, specialdelar)."""
+    mats.brass_worn("LampBrass", polish=0.7, patina=0.85, prints=[(0.55, 0.0, 0.36), (0.8, -0.36, 1.55)])
+    mats.felt("LampFelt", "#1f3a26")
+    mats.cloth_cord("LampCord", "#2a2420")
+    m, t = mats.fresh("LampShadeSrc")  # glaset i atlasen: grönt med damm på ovansidan
+    col, rough, _ = mats.dust(t, mats.srgb("#0c4321"), 0.08, 0.7)
+    t.set(col, rough, 0.0)
+    for s in ("Opal", "Bulb"):
         mats.special(s)
     P, S = [], []
     pl = prism("plinth", rounded_rect(2.0, 1.3, 0.3, n=8), 0.2, "LampBrass", axis="Z", center=(0, 0, 0.11))
@@ -586,10 +589,8 @@ def lamp():
     for z in (0.32, 1.2):
         P.append(lathe(f"collar{z}", [(0.08, 0.0), (0.1, 0.03), (0.1, 0.08), (0.08, 0.11)], seg=24,
                        material="LampBrass", center=(0, 0.25, z), cap_bottom=False, cap_top=False))
-    # brytare (vridknapp) på foten
     P.append(knurled("switch", 0.08, 0.1, "LampBrass", ridges=16))
     transform(P[-1], loc=(0.55, 0.0, 0.33))
-    # skärmen: halvcylinder längs X, lätt framåtlutad
     L, R = 2.4, 0.6
     outer, inner_ = [], []
     for i in range(17):
@@ -601,15 +602,13 @@ def lamp():
             arc_i.append((x, math.cos(a) * (R - 0.035), 2.25 + math.sin(a) * (R - 0.035) * 0.85))
         outer.append(arc_o)
         inner_.append(arc_i)
-    sh_o = loft("shade", outer, "GreenGlass", closed=False)
-    sh_i = loft("shade_in", inner_, "LampOpal", closed=False)
-    if sum((p.center - Vector((p.center.x, 0, 2.25))).dot(p.normal) for p in sh_o.data.polygons) < 0:
-        sh_o.data.flip_normals()
+    shade = loft("shade", outer, "LampShadeSrc", closed=False)
+    sh_i = loft("shade_in", inner_, "Opal", closed=False)
+    if sum((p.center - Vector((p.center.x, 0, 2.25))).dot(p.normal) for p in shade.data.polygons) < 0:
+        shade.data.flip_normals()
     if sum((p.center - Vector((p.center.x, 0, 2.25))).dot(p.normal) for p in sh_i.data.polygons) > 0:
         sh_i.data.flip_normals()
-    S.append(sh_o)
-    P.append(sh_i)
-    # mässingskanter längs skärmens underkanter och gavlarna
+    S.append(sh_i)
     for k in (0, 24):
         P.append(tube(f"rim{k}", [(x, outer[0][k][1] * 1.03, outer[0][k][2]) for x in (-L / 2 - 0.02, L / 2 + 0.02)],
                       0.025, "LampBrass", seg=10))
@@ -619,40 +618,42 @@ def lamp():
         cp = prism(f"cap{s}", list(reversed(arc)), 0.045, "LampBrass", axis="X", center=(s * (L / 2 + 0.012), 0, 0))
         add_bevel(cp, 0.012, 3, 0.7)
         P.append(cp)
-    # fästet ovanpå skärmen och dragkedja med kula
     P.append(box("clamp", (0, -0.05, 2.25 + R * 0.85 + 0.02), (0.2, 0.18, 0.06), "LampBrass", bevel=0.025, segments=3))
     for i in range(10):
         P.append(ellipsoid(f"chain{i}", (0.8, -0.36, 1.95 - i * 0.04), (0.012, 0.012, 0.02), "LampBrass", seg=8,
                            rings=5))
     P.append(ellipsoid("bead", (0.8, -0.36, 1.52), (0.035, 0.035, 0.05), "LampBrass", seg=16, rings=10))
-    # glödlampa och sockel under skärmen
     P.append(lathe("socket", [(0.07, 0.0), (0.08, 0.05), (0.08, 0.2), (0.06, 0.22)], seg=24, material="LampBrass",
                    center=(0, -0.05, 2.2), cap_top=False))
     transform(P[-1], rot=(180, 0, 0), pivot=(0, -0.05, 2.32))
     S.append(lathe("bulb", [(0.0, -0.32), (0.08, -0.3), (0.13, -0.22), (0.12, -0.12), (0.06, -0.04), (0.06, 0.0)],
                    seg=24, material="Bulb", center=(0, -0.05, 2.12)))
-    for p in P + S:
+    for p in P + S + [shade]:
         if p.name.startswith(("shade", "cap", "chain", "bead", "rim", "clamp", "socket", "bulb")):
             transform(p, rot=(-8, 0, 0), pivot=(0, 0, 2.25))
-    P.append(cord("cord", [(0, 0.66, 0.08), (0.1, 1.0, 0.04), (0.6, 1.6, 0.04), (1.6, 1.9, 0.04)], 0.04,
-                  "LampCord"))
+    P.append(twisted_cord("cord", [(0, 0.66, 0.08), (0.1, 1.0, 0.04), (0.6, 1.6, 0.04), (1.6, 1.9, 0.04)], 0.04,
+                          "LampCord", pitch=0.11))
     ob = finish(P, "lamp", 40)
-    return ob, S
+    smooth(shade, 60)
+    return ob, shade, S
 
 
 def ashtray():
-    """Tung mässingsaskkopp med tre cigarrskåror, aska och en tänd cigarr."""
-    mats.brass("AshBrass", polish=0.5, patina=0.8, scale=0.35)
+    """Tung mässingsaskkopp (patina, fingeravtryck) med tre skåror, lös aska och en utfimpad cigarett. Cigarren
+    har en kort sprucken askkon, en tunn glödande ring (emissiv textur) och en påhittad cigarrring."""
+    mats.brass_worn("AshBrass", polish=0.5, patina=0.9, scale=0.35, prints=[(0.6, -0.3, 0.3)])
     mats.cigar("Cigar")
     mats.ash("Ash")
     mats.painted("CigarBand", "#8c1c14", rough=0.4, wear=0.0)
-    mats.ivory("CigPaper", "#ece6d8")
-    mats.special("Ember")
+    mats.painted("BandGold", "#c9a24f", rough=0.3, wear=0.0)
+    mats.print_worn("BandPrint", "#f2e6c8", "#8c1c14", 0.15)
+    mats.ivory_worn("CigPaper", "#ece6d8")
+    mats.ember_tex("Ember")
     P, S = [], []
     bowl = lathe("bowl", [(0.0, 0.0), (0.66, 0.0), (0.7, 0.025), (0.73, 0.26), (0.71, 0.32), (0.66, 0.345),
                           (0.56, 0.35), (0.5, 0.31), (0.47, 0.14), (0.42, 0.11), (0.0, 0.1)], seg=96,
                  material="AshBrass")
-    for i in range(3):  # cigarrskåror i kanten
+    for i in range(3):
         a = math.radians(30 + i * 120)
         c = cyl(f"notch{i}", (math.cos(a) * 0.4, math.sin(a) * 0.4, 0.4), (math.cos(a) * 0.95, math.sin(a) * 0.95, 0.4),
                 0.1, seg=24, material="AshBrass")
@@ -665,38 +666,53 @@ def ashtray():
     for o in [o for o in bpy.data.objects if o.name.startswith("notch")]:
         bpy.data.objects.remove(o)
     P.append(bowl)
-    # aska i botten (oregelbunden hög)
-    pile = lathe("ash_pile", [(0.0, 0.1), (0.36, 0.1), (0.26, 0.13), (0.12, 0.16), (0.0, 0.17)], seg=32,
+    pile = lathe("ash_pile", [(0.0, 0.1), (0.38, 0.1), (0.28, 0.125), (0.14, 0.15), (0.0, 0.16)], seg=40,
                  material="Ash")
     for v in pile.data.vertices:
         if v.co.z > 0.105:
-            n = math.sin(v.co.x * 23) * math.cos(v.co.y * 19) * 0.012
-            v.co.z += n
+            v.co.z += math.sin(v.co.x * 23) * math.cos(v.co.y * 19) * 0.014
     P.append(pile)
-    # cigarren vilar i skåran vid 30° med glöden inne i skålen
+    import random
+    rnd = random.Random(4)
+    for k in range(14):  # lösa askflagor
+        a, r = rnd.uniform(0, math.tau), rnd.uniform(0.12, 0.42)
+        e = ellipsoid(f"flake{k}", (math.cos(a) * r, math.sin(a) * r, 0.118 + rnd.uniform(0, 0.02)),
+                      (rnd.uniform(0.02, 0.045), rnd.uniform(0.015, 0.03), 0.008), "Ash", seg=8, rings=4)
+        transform(e, rot=(rnd.uniform(-20, 20), rnd.uniform(-20, 20), rnd.uniform(0, 180)),
+                  pivot=(math.cos(a) * r, math.sin(a) * r, 0.12))
+        P.append(e)
+    # cigarren: tobak, kort askkon i den brinnande änden, tunn glödring mellan aska och tobak
     a = math.radians(30)
     d = Vector((math.cos(a), math.sin(a), 0.12)).normalized()
-    start = Vector((math.cos(a) * 0.1, math.sin(a) * 0.1, 0.33))
+    start = Vector((math.cos(a) * 0.12, math.sin(a) * 0.12, 0.335))
     pts = [start + d * t for t in (0.0, 0.05, 0.3, 0.7, 1.05, 1.2)]
-    P.append(tube("cigar", pts, [0.068, 0.074, 0.078, 0.078, 0.07, 0.055], "Cigar", seg=20))
-    P.append(tube("ash", [start - d * 0.11, start - d * 0.03, start + d * 0.005], [0.062, 0.068, 0.07], "Ash", seg=20))
-    # glöden: en glödande ring där askan möter tobaken, och en svag glöd i askans spets
-    ring = torus("ember", (0, 0, 0), 0.07, 0.012, "Ember", seg=32, rseg=8)
+    P.append(tube("cigar", pts, [0.07, 0.075, 0.078, 0.078, 0.07, 0.055], "Cigar", seg=24))
+    P.append(tube("ash", [start - d * 0.16, start - d * 0.11, start - d * 0.04, start - d * 0.004],
+                  [0.045, 0.06, 0.066, 0.068], "Ash", seg=24))
+    ring = torus("ember", (0, 0, 0), 0.069, 0.007, "Ember", seg=40, rseg=8)
+    lib.uv_box(ring, 18.0)
     orient(ring, (0, 0, 0), tuple(d))
-    transform(ring, loc=tuple(start + d * 0.012))
+    transform(ring, loc=tuple(start - d * 0.003))
     S.append(ring)
-    tip = ellipsoid("ember_tip", tuple(start - d * 0.118), (0.045, 0.045, 0.045), "Ember", seg=12, rings=8)
-    S.append(tip)
+    # cigarrringen: röd med guldkanter och påhittat namn ovanpå
     band = start + d * 0.85
-    P.append(tube("band", [band - d * 0.06, band + d * 0.06], [0.081, 0.081], "CigarBand", seg=20))
-    P.append(tube("band_gold", [band - d * 0.015, band + d * 0.015], [0.083, 0.083], "AshBrass", seg=20))
-    # en utfimpad cigarett i askan
-    b2 = Vector((-0.2, -0.15, 0.16))
+    P.append(tube("band", [band - d * 0.065, band + d * 0.065], [0.081, 0.081], "CigarBand", seg=24))
+    for off in (-0.065, 0.065):
+        P.append(tube(f"bandgold{off}", [band + d * (off - 0.008), band + d * (off + 0.008)], [0.083, 0.083],
+                      "BandGold", seg=24))
+    upv = (Vector((0, 0, 1)) - d * d.z).normalized()
+    side = upv.cross(d)
+    txt = text_mesh("bandtext", "LA PALOMA", 0.045, 0.002, "BandPrint", max_width=0.115)
+    M = Matrix((tuple(d) + (0,), tuple(side) + (0,), tuple(upv) + (0,), (0, 0, 0, 1))).transposed()
+    txt.data.transform(Matrix.Translation(band + upv * 0.0815) @ M)
+    P.append(txt)
+    # utfimpad cigarett
+    b2 = Vector((-0.2, -0.15, 0.165))
     d2 = Vector((-0.9, 0.3, 0.25)).normalized()
     P.append(tube("butt", [b2, b2 + d2 * 0.22], [0.028, 0.03], "CigPaper", seg=12))
     P.append(tube("butt_ash", [b2 - d2 * 0.02, b2 + d2 * 0.01], [0.022, 0.028], "Ash", seg=12))
     ob = finish(P, "ashtray", 40)
-    smoke_at = tuple(start - d * 0.13 + Vector((0, 0, 0.05)))
+    smoke_at = tuple(start - d * 0.17 + Vector((0, 0, 0.04)))
     return ob, S, smoke_at
 
 
@@ -705,8 +721,8 @@ def phone():
     fingerhål, siffror och fingerstopp (egen nod `dial`, vrids kring sin axel), lur i klykan (egen nod `handset`),
     nummerlapp under plastfönster, tvinnade textilsladdar, gummifötter. Sliten: matt nött bakelit där händerna tar,
     repor, damm i skrevorna, halvt bortnötta siffror. Returnerar (bas, [dial, handset], specialdelar för dial)."""
-    mats.bakelite_worn("PhoneBakelite", color="#0e0c0b", mottle="#221c18", gloss=0.1,
-                       prints=[(0.0, 0.25, 1.33), (0.55, 0.25, 1.3), (-0.3, -0.75, 0.75)])
+    mats.bakelite_worn("PhoneBakelite", color="#0a0908", mottle="#15120f", gloss=0.08,
+                       prints=[(0.0, 0.25, 1.33), (0.55, 0.25, 1.3), (-0.3, -0.75, 0.75)], dust_amt=0.35, chips=0.5)
     mats.chrome_worn("PhoneNickel", scale=0.12)
     mats.ivory_worn("PhoneEnamel", "#ece6d6")
     mats.print_worn("PhoneDigits", "#151210", "#e8e1cf", 0.4)
@@ -735,8 +751,8 @@ def phone():
     xr = Vector((1, 0, 0))
     yr = nrm.cross(xr).normalized()  # uppåt längs sluttningen
     seat = lathe("seat", [(0.0, -0.08), (0.42, -0.08), (0.43, -0.03), (0.41, 0.0), (0.33, 0.005), (0.0, 0.005)],
-                 seg=64, material="PhoneBakelite")
-    numring = lathe("numring", [(0.19, 0.006), (0.37, 0.006), (0.375, 0.014), (0.19, 0.014)], seg=64,
+                 seg=48, material="PhoneBakelite")
+    numring = lathe("numring", [(0.19, 0.006), (0.37, 0.006), (0.375, 0.014), (0.19, 0.014)], seg=48,
                     material="PhoneEnamel", cap_bottom=False)
     for o in (seat, numring):
         orient(o, (0, 0, 0), tuple(nrm))
@@ -770,9 +786,9 @@ def phone():
                            seg=16, material="PhoneRubber", center=(x, y, 0)))
     # sladdar: från basens sida upp till luren, och nätsladden bakåt ut på bordet (tvinnade, textilomspunna)
     P.append(twisted_cord("cord", [(0.86, 0.45, 0.32), (1.14, 0.5, 0.45), (1.22, 0.36, 0.8), (1.08, 0.27, 1.0)],
-                          0.034, "PhoneCord", pitch=0.09, per_pitch=5, seg=5))
+                          0.034, "PhoneCord", pitch=0.11, per_pitch=4, seg=5))
     P.append(twisted_cord("line", [(-0.45, 0.98, 0.18), (-0.55, 1.35, 0.04), (-1.2, 1.9, 0.04), (-2.2, 2.0, 0.04)],
-                          0.03, "PhoneCord", pitch=0.1, per_pitch=5, seg=4))
+                          0.03, "PhoneCord", pitch=0.14, per_pitch=4, seg=4))
     # förhöj baslinjen: lyft allt så att gummifötterna står på z = 0
     body = finish(P, "phone", 40)
     transform(body, loc=(0, 0, 0.03))
@@ -780,16 +796,16 @@ def phone():
     # ---- nummerskivan (egen nod): fingerhjul i nickel med tio hål, nummerlapp under plastfönster
     D = []
     wheel = lathe("fingerwheel", [(0.0, 0.0), (0.345, 0.0), (0.358, 0.012), (0.36, 0.035), (0.348, 0.05),
-                                  (0.15, 0.05), (0.138, 0.04), (0.0, 0.04)], seg=72, material="PhoneNickel")
+                                  (0.15, 0.05), (0.138, 0.04), (0.0, 0.04)], seg=48, material="PhoneNickel")
     for i in range(10):
         ang = math.radians(60 + i * 27)
         h = cyl(f"hole{i}", (math.cos(ang) * 0.315, math.sin(ang) * 0.315, -0.1),
-                (math.cos(ang) * 0.315, math.sin(ang) * 0.315, 0.2), 0.05, seg=24, material="PhoneNickel")
+                (math.cos(ang) * 0.315, math.sin(ang) * 0.315, 0.2), 0.05, seg=14, material="PhoneNickel")
         bo = wheel.modifiers.new(f"h{i}", "BOOLEAN")
         bo.operation = "DIFFERENCE"
         bo.solver = "EXACT"
         bo.object = h
-    add_bevel(wheel, 0.006, 2, 0.6)
+    add_bevel(wheel, 0.005, 1, 0.6)
     lib.apply_mods(wheel)
     for o in [o for o in bpy.data.objects if o.name.startswith("hole")]:
         bpy.data.objects.remove(o)
@@ -840,20 +856,43 @@ def phone():
 
 
 def cup():
-    """Kaffekopp på fat i porslin med guldkant, svart kaffe och en sked."""
-    mats.porcelain("Porcelain")
+    """Kaffekopp på fat: elfenbensvitt porslin med krakelerad glasyr, guldkant, kafferand som runnit ned på
+    utsidan, kaffering på fatet, ett kantstött hack i koppkanten, en sked."""
+    mats.porcelain_worn("Porcelain", "#efe5cf", drip=(-55, 0.72, 0.38), ring=((0.06, -0.04), 0.3))
+    mats.bisque("Bisque")
     mats.gilt("Gilt")
     mats.coffee("Coffee")
-    mats.chrome("Spoon")
+    mats.chrome_worn("Spoon", 0.1)
     P = []
     P.append(lathe("saucer", [(0.0, 0.0), (0.46, 0.0), (0.48, 0.012), (0.5, 0.03), (0.7, 0.055), (0.77, 0.095),
                               (0.785, 0.112), (0.77, 0.12), (0.5, 0.072), (0.33, 0.08), (0.31, 0.075), (0.0, 0.07)],
                    seg=96, material="Porcelain"))
     P.append(torus("saucer_rim", (0, 0, 0.113), 0.778, 0.009, "Gilt", seg=96, rseg=8))
-    P.append(lathe("cup", [(0.0, 0.07), (0.24, 0.07), (0.26, 0.085), (0.27, 0.11), (0.38, 0.3), (0.425, 0.6),
-                           (0.435, 0.715), (0.43, 0.73), (0.415, 0.73), (0.41, 0.71), (0.395, 0.6), (0.35, 0.32),
-                           (0.25, 0.14), (0.0, 0.13)], seg=96, material="Porcelain"))
-    P.append(torus("cup_rim", (0, 0, 0.726), 0.424, 0.011, "Gilt", seg=96, rseg=8))
+    cupb = lathe("cup", [(0.0, 0.07), (0.24, 0.07), (0.26, 0.085), (0.27, 0.11), (0.38, 0.3), (0.425, 0.6),
+                         (0.435, 0.715), (0.43, 0.73), (0.415, 0.73), (0.41, 0.71), (0.395, 0.6), (0.35, 0.32),
+                         (0.25, 0.14), (0.0, 0.13)], seg=96, material="Porcelain")
+    # kantstött hack i kanten (boolean), ytan blir oglaserad
+    chip = ellipsoid("chipcut", (math.cos(math.radians(150)) * 0.43, math.sin(math.radians(150)) * 0.43, 0.732),
+                     (0.03, 0.022, 0.018), "Bisque", seg=16, rings=10)
+    bo = cupb.modifiers.new("Chip", "BOOLEAN")
+    bo.operation = "DIFFERENCE"
+    bo.solver = "EXACT"
+    bo.object = chip
+    bo.material_mode = "TRANSFER"
+    lib.apply_mods(cupb)
+    bpy.data.objects.remove(chip)
+    P.append(cupb)
+    rim = torus("cup_rim", (0, 0, 0.726), 0.424, 0.011, "Gilt", seg=96, rseg=8)
+    # guldkanten är borta där hacket sitter
+    import bmesh as _bm
+    bm = _bm.new()
+    bm.from_mesh(rim.data)
+    kill = [v for v in bm.verts if math.atan2(v.co.y, v.co.x) > math.radians(140)
+            and math.atan2(v.co.y, v.co.x) < math.radians(160)]
+    _bm.ops.delete(bm, geom=kill, context="VERTS")
+    bm.to_mesh(rim.data)
+    bm.free()
+    P.append(rim)
     P.append(torus("foot_ring", (0, 0, 0.1), 0.262, 0.008, "Gilt", seg=64, rseg=6))
     P.append(lathe("coffee", [(0.0, 0.6), (0.392, 0.6)], seg=64, material="Coffee", cap_bottom=False))
     pts = [(0.39 + 0.17 * math.sin(math.radians(a)), 0, 0.46 + 0.17 * math.cos(math.radians(a))) for a in range(10, 191, 12)]
@@ -865,44 +904,89 @@ def cup():
 
 
 def rake():
-    """Krupiärräfsa som i krigsrummen: polerad trästång, mässingshylsor och ett avfasat tvärblad med skruvar.
+    """Krupiärräfsa som i krigsrummen: lång, tunn, polerad trästång som smalnar av mot bladet, mässingshylsa i
+    skarven och ändhylsa, platt T-blad i trä med filtad undersida och mässingskant, nött grepp.
     Ligger på bordet, bladet mot +X, origo mitt under stången."""
-    mats.wood("RakeWood", "black_walnut_veneer_02", tint="#c98c4c", scale=0.7, darken=1.15, gloss=0.15,
-              rot=(0, 90, 0), wear=0.9)
-    mats.brass("RakeBrass", polish=0.8, patina=0.5)
+    mats.wood_worn("RakeWood", "black_walnut_veneer_02", tint="#c98c4c", scale=0.7, darken=1.15, gloss=0.14,
+                   rot=(0, 90, 0), knobs=[((-3.6, 0.0, 0.06), 0.8)], bleach=0.3, wear=1.0)
+    mats.brass_worn("RakeBrass", polish=1.2, patina=0.6, prints=[(4.25, 0.0, 0.1)])
+    mats.felt("RakeFelt", "#264a2b")
     P = []
-    P.append(tube("pole", [(-4.3, 0, 0.055), (0.0, 0, 0.083), (4.25, 0, 0.11)], [0.05, 0.056, 0.06], "RakeWood",
-                  seg=20))
-    P.append(cyl("ferrule", (4.2, 0, 0.11), (4.42, 0, 0.115), 0.066, seg=24, material="RakeBrass", bevel=0.008))
-    P.append(cyl("endcap", (-4.42, 0, 0.055), (-4.3, 0, 0.055), 0.056, seg=24, material="RakeBrass", bevel=0.01))
-    blade = box("blade", (4.47, 0, 0.12), (0.07, 1.5, 0.24), "RakeWood", bevel=0.025, segments=4)
+    # stången: avsmalnande mot bladet, lätt nedåt mot greppet där den vilar på bordet
+    pts = [(-4.35 + 8.55 * t, 0.0, 0.05 + 0.085 * t) for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
+    P.append(tube("pole", pts, [0.05, 0.047, 0.043, 0.039, 0.034], "RakeWood", seg=24))
+    P.append(lathe("endcap", [(0.0, -0.06), (0.04, -0.058), (0.052, -0.04), (0.054, 0.04), (0.05, 0.05)], seg=24,
+                   material="RakeBrass"))
+    orient(P[-1], (0, 0, 0), (1, 0, 0.01))
+    transform(P[-1], loc=(-4.35, 0, 0.05))
+    # mässingshylsan i skarven och fästet mot bladet
+    P.append(lathe("ferrule", [(0.036, -0.02), (0.045, 0.0), (0.045, 0.05), (0.04, 0.06), (0.04, 0.16), (0.048, 0.17),
+                               (0.048, 0.2), (0.03, 0.22)], seg=28, material="RakeBrass", cap_bottom=False))
+    orient(P[-1], (0, 0, 0), (1, 0, 0.01))
+    transform(P[-1], loc=(4.06, 0, 0.134))
+    # T-bladet: platt träskiva på högkant med rundade ändar, filt under, mässingskant längs nederkanten
+    blade_outline = rrect4(1.6, 0.24, 0.1, 0.03, n=8)
+    blade = prism("blade", blade_outline, 0.055, "RakeWood", axis="X", center=(4.33, 0, 0.135))
+    add_bevel(blade, 0.012, 3, 0.6)
     P.append(blade)
-    P.append(box("plate", (4.43, 0, 0.12), (0.012, 0.3, 0.16), "RakeBrass", bevel=0.004, segments=2))
-    for y in (-0.1, 0.1):
-        P.append(screw(f"screw{y}", (4.425, y, 0.12), 0.022, (-1, 0, 0), "RakeBrass"))
+    P.append(box("felt", (4.33, 0, 0.0075), (0.05, 1.56, 0.015), "RakeFelt", bevel=0.004, segments=2))
+    P.append(box("edge_f", (4.302, 0, 0.032), (0.006, 1.58, 0.035), "RakeBrass", bevel=0.002, segments=2))
+    P.append(box("edge_b", (4.358, 0, 0.032), (0.006, 1.58, 0.035), "RakeBrass", bevel=0.002, segments=2))
+    P.append(box("bracket", (4.27, 0, 0.14), (0.04, 0.22, 0.12), "RakeBrass", bevel=0.01, segments=2))
+    for y in (-0.07, 0.07):
+        P.append(screw(f"screw{y}", (4.248, y, 0.14), 0.016, (-1, 0, 0), "RakeBrass"))
     return finish(P, "rake", 40)
 
 
 def inkwell():
-    """Bläckhorn i tjockt glas med mässingslock på gångjärn, bläck i brunnen, och en doppenna bredvid."""
-    mats.brass("InkBrass", polish=0.6, patina=0.7)
+    """Bläckhorn i tjockt glas med mässingslock (intorkat bläck vid locket) på ett läskunderlägg med bläckfläckar,
+    och en doppenna med stålstift."""
+    mats.brass_worn("InkBrass", polish=0.6, patina=0.8)
+    m, t = mats.fresh("InkLid")  # locket: mässing med intorkat bläck kring kanten
+    v = t.coords(1.0 / 0.15)
+    col = t.mix(t.math("MULTIPLY", t.cavity(0.04), 0.9), mats.srgb("#c8994f"), mats.srgb("#4a3a1c"))
+    col, rough, _ = mats.ink_crust(t, col, 0.3, 0.57, 0.66)
+    t.set(col, rough, 0.85)
     mats.ink("Ink")
     mats.wood("PenWood", "black_walnut_veneer_02", tint="#5a2a14", scale=0.3, darken=1.5, gloss=0.12,
               rot=(0, 90, 0))
+    mats.chrome_worn("Nib", 0.05)
+    mats.painted("Leather", "#3a2416", rough=0.6, wear=0.5, under="#6a4a32")
+    mats.blotter("Blotter", blots=[((0.42, -0.35, 0.02), 0.09), ((-0.3, 0.38, 0.02), 0.05), ((0.55, 0.2, 0.02), 0.035),
+                                   ((-0.5, -0.25, 0.02), 0.06)])
     mats.special("Glass")
     P, S = [], []
-    S.append(box("glass", (0, 0, 0.26), (0.75, 0.75, 0.52), "Glass", bevel=0.08, segments=4))
-    P.append(lathe("ink", [(0.0, 0.1), (0.2, 0.1), (0.205, 0.4), (0.0, 0.4)], seg=32, material="Ink"))
-    P.append(lathe("collar", [(0.22, 0.5), (0.26, 0.52), (0.265, 0.58), (0.24, 0.6), (0.22, 0.6)], seg=48,
-                   material="InkBrass", cap_bottom=False))
-    P.append(lathe("lid", [(0.275, 0.585), (0.28, 0.62), (0.22, 0.69), (0.08, 0.73), (0.05, 0.76), (0.065, 0.8),
-                           (0.0, 0.83)], seg=48, material="InkBrass"))
-    P.append(cyl("hinge", (-0.08, 0.29, 0.6), (0.08, 0.29, 0.6), 0.03, seg=16, material="InkBrass", bevel=0.006))
-    P.append(tube("pen", [(0.55, -0.6, 0.045), (0.8, -0.1, 0.045), (1.0, 0.3, 0.045), (1.12, 0.52, 0.04)],
+    P.append(box("blotter", (0.15, 0.0, 0.01), (2.0, 1.5, 0.02), "Blotter", bevel=0.006, segments=2))
+    for sx_ in (1, -1):
+        for sy_ in (1, -1):
+            c = prism(f"corner{sx_}{sy_}", [(0, 0), (-0.28 * sx_, 0), (0, -0.28 * sy_)], 0.026, "Leather", axis="Z",
+                      center=(0.15 + 1.0 * sx_, 0.75 * sy_, 0.013))
+            add_bevel(c, 0.006, 2, 0.6)
+            P.append(c)
+    lift = 0.02
+    S.append(box("glass", (0, 0, 0.26 + lift), (0.75, 0.75, 0.52), "Glass", bevel=0.08, segments=4))
+    P.append(lathe("ink", [(0.0, 0.1 + lift), (0.2, 0.1 + lift), (0.205, 0.4 + lift), (0.0, 0.4 + lift)], seg=32,
+                   material="Ink"))
+    P.append(lathe("collar", [(0.22, 0.5 + lift), (0.26, 0.52 + lift), (0.265, 0.58 + lift), (0.24, 0.6 + lift),
+                              (0.22, 0.6 + lift)], seg=48, material="InkLid", cap_bottom=False))
+    P.append(lathe("lid", [(0.275, 0.585 + lift), (0.28, 0.62 + lift), (0.22, 0.69 + lift), (0.08, 0.73 + lift),
+                           (0.05, 0.76 + lift), (0.065, 0.8 + lift), (0.0, 0.83 + lift)], seg=48, material="InkLid"))
+    P.append(cyl("hinge", (-0.08, 0.29, 0.6 + lift), (0.08, 0.29, 0.6 + lift), 0.03, seg=16, material="InkBrass",
+                 bevel=0.006))
+    # doppennan: trähållare, mässingshylsa, stålstift med spets och skåra
+    z = 0.02 + 0.045
+    P.append(tube("pen", [(0.55, -0.6, z), (0.8, -0.1, z), (1.0, 0.3, z), (1.12, 0.52, z - 0.005)],
                   [0.036, 0.042, 0.04, 0.028], "PenWood", seg=14))
-    P.append(tube("ferrule", [(1.1, 0.48, 0.04), (1.14, 0.56, 0.038)], [0.03, 0.026], "InkBrass", seg=14))
-    P.append(tube("nib", [(1.14, 0.56, 0.038), (1.2, 0.68, 0.025), (1.23, 0.74, 0.02)], [0.022, 0.012, 0.002],
-                  "InkBrass", seg=10))
+    P.append(tube("ferrule", [(1.1, 0.48, z - 0.005), (1.14, 0.56, z - 0.007)], [0.03, 0.026], "InkBrass", seg=14))
+    nib = prism("nib", [(0.0, -0.022), (0.1, -0.012), (0.17, 0.0), (0.1, 0.012), (0.0, 0.022)], 0.006, "Nib", axis="Z",
+                center=(0, 0, 0))
+    add_bevel(nib, 0.0015, 1, 0.6)
+    lib.apply_mods(nib)
+    d = Vector((1.25 - 1.14, 0.78 - 0.56, -0.01)).normalized()
+    ang = math.degrees(math.atan2(d.y, d.x))
+    transform(nib, rot=(0, 0, ang))
+    transform(nib, loc=(1.14, 0.56, z - 0.008))
+    P.append(nib)
     return finish(P, "inkwell", 40), S
 
 
@@ -910,9 +994,12 @@ def props():
     """Alla rekvisita som egna rotnoder (origo under sig själva), utspridda så att de inte överlappar.
     Varje föremål bakas till en egen atlas."""
     roots = []
-    lp, lp_s = lamp()
-    mats.bake_set([lp], "Lamp", res(2048), ao_dist=0.3)
-    lp = join([lp] + lp_s, "lamp")
+    lp, shade, lp_s = lamp()
+    lp_mat = mats.bake_set([lp, shade], "Lamp", res(2048), ao_dist=0.3)
+    gg = mats.variant(lp_mat, "GreenGlass", transmission=0.3, emission="#2f9a50", strength=0.25)
+    for slot in shade.material_slots:
+        slot.material = gg
+    lp = join([lp, shade] + lp_s, "lamp")
     empty("bulb", (0, -0.08, 2.0), parent=lp)
     at, at_s, smoke_at = ashtray()
     mats.bake_set([at], "Ashtray", res(1024), ao_dist=0.12)
@@ -936,7 +1023,6 @@ def props():
         roots.append(ob)
     bpy.context.view_layer.update()
     return roots
-
 
 # ======================================================================= förhandsbilder och export
 

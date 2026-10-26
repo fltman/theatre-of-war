@@ -219,12 +219,22 @@ def dial_grime(w=1024, h=160):
     save_rgba(os.path.join(BT, "dial_grime.png"), np.concatenate([col, a[..., None]], -1))
 
 
+def ember(size=256):
+    """Cigarrglöd: mörk aska med glödande prickar och ådror (emissiv textur, sömlös)."""
+    n1 = fbm((size, size), 5, 61, base=8)
+    n2 = fbm((size, size), 3, 62, base=24)
+    glow = np.clip((n1 * 0.7 + n2 * 0.5 - 0.55) / 0.25, 0, 1) ** 1.5
+    col = np.stack([1.0 * glow + 0.06, 0.38 * glow ** 1.4 + 0.03, 0.08 * glow ** 2 + 0.02], -1)
+    save(os.path.join(BT, "ember.png"), col)
+
+
 if __name__ == "__main__":
     os.makedirs(BT, exist_ok=True)
     os.makedirs(PT, exist_ok=True)
     tread()
     weave()
     dial_grime()
+    ember()
     flock()
     table()
     paper()
