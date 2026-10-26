@@ -12,7 +12,8 @@
     "server": "node server/index.js",
     "test": "node --test 'test/*.test.mjs'",
     "map": "node tools/build_map.mjs",
-    "assets": "tools/build_assets.sh"
+    "assets": "tools/build_assets.sh",
+    "deploy": "tools/deploy.sh"
   },
   "dependencies": {
     "cannon-es": "^0.20.0",

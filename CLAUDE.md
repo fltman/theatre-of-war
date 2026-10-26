@@ -65,6 +65,15 @@ kontinentgränser. Grannpar utan gemensam gräns blir sjövägar (närmaste punk
 - Syntetiska pekarhändelser i test ger "setPointerCapture"-fel från OrbitControls (ofarligt).
 - Tärningarnas osynliga väggar: kasten måste starta innanför dem, annars studsar tärningarna iväg.
 
+## Driftsättning
+
+**LIVE: https://theatreofwar.bjarby.com** — `npm run deploy` (`tools/deploy.sh`): Vultr-boxen 70.34.220.159 (delas med
+audioworld, geo, torget, mayhem), Caddy framför (automatisk HTTPS, blocket läggs till i `/etc/caddy/Caddyfile` en gång),
+statiska filer i `/opt/theatre-of-war/dist`, onlineservern som systemd-tjänsten `theatre-of-war` (användare `theatre`,
+port 8263, SQLite i `/var/lib/theatre-of-war/theatre.db`, AI_DELAY_MS 900, MemoryMax 400M). DNS: A-post `theatreofwar`
+hos one.com (Domän → DNS-inställningar → DNS-post → A). Boxen har Node 22.22 (node:sqlite utan flagga).
+Prova online mot den skarpa servern: `node build/online_e2e_live.mjs` (två webbläsare, ändra URL i skriptet).
+
 ## Kostnader (fråga först)
 
 ElevenLabs (eleven_v4; nyckeln i ~/.zprofile utan export: `zsh -c 'source ~/.zprofile; export ELEVENLABS_API_KEY; …'`),

@@ -102,9 +102,11 @@ export class LobbyUI {
       <button data-a="back" class="link">← Back</button>`);
     m.querySelector('[data-a=back]').onclick = () => this.back();
     const nameIn = m.querySelector('[data-k=name]');
-    try { await this.connect(); } catch (e) { this.error(m, e); return; }
+    // knapparna fungerar direkt; anslutningen (som kan ta en stund mot servern) väntas in i varje handling
+    const connecting = this.connect().catch((e) => { this.error(m, e); throw e; });
     // namnet följer med i hello: byts det, anslut om så att servern får det nya
     const setName = async () => {
+      await connecting;
       const n = nameIn.value.trim();
       if (!n || n === this.net.player?.name) return;
       this.net.name = n;
@@ -115,6 +117,7 @@ export class LobbyUI {
     m.querySelector('[data-a=create]').onclick = async () => { await setName(); this.create(); };
     m.querySelector('[data-a=join]').onclick = async () => { await setName(); this.join(m.querySelector('[data-k=code]').value); };
     try {
+      await connecting;
       const lobby = await this.net.list();
       const row = (g, btn) => `<div class="game"><span class="code">${g.code}</span><span class="chips">${g.seats.map((s) => `<i class="chip ${s.open ? 'open' : ''}" style="--c:${FACTION[s.faction].paint}" title="${esc(s.name ?? s.kind)}"></i>`).join('')}</span><span class="st">${g.status === 'lobby' ? 'mustering' : g.status === 'over' ? 'over' : `month ${g.round}`}${g.yourTurn ? ' <b class="stamp">YOUR MOVE</b>' : ''}</span>${btn}</div>`;
       m.querySelector('[data-l=open]').innerHTML = lobby.open.length ? lobby.open.map((g) => row(g, `<button data-j="${g.code}">Join</button>`)).join('') : '<p class="muted">No wars are mustering right now.</p>';
