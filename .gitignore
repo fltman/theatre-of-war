@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+assets/src/
+vault/
+.obsidian/
+.DS_Store
+*.blend1
+server/data/
+blender/__pycache__/
+progress/

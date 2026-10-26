@@ -1,0 +1,37 @@
+{
+  "title": {
+    "file": "title.mp3",
+    "seconds": 102.8,
+    "suno": "30c6553d-e5dc-4186-9d3e-4f33277c3f9a"
+  },
+  "newsreel": {
+    "file": "newsreel.mp3",
+    "seconds": 11.8,
+    "suno": "db752823-a338-461b-aeba-65408da72129"
+  },
+  "victory": {
+    "file": "victory.mp3",
+    "seconds": 133.2,
+    "suno": "f86af320-79d5-4941-ae88-07b9da7db98a"
+  },
+  "radio_swing_1": {
+    "file": "radio_swing_1.mp3",
+    "seconds": 134.0,
+    "suno": "0eccfb5d-d38f-4e7c-9d16-b160b1cdc86e"
+  },
+  "radio_swing_2": {
+    "file": "radio_swing_2.mp3",
+    "seconds": 134.92,
+    "suno": "89713893-d116-4c07-adf4-c26353c88b74"
+  },
+  "radio_dance": {
+    "file": "radio_dance.mp3",
+    "seconds": 189.48,
+    "suno": "a9473c9f-e089-4ca1-9d48-402d7b396a81"
+  },
+  "warroom": {
+    "file": "warroom.mp3",
+    "seconds": 94.2,
+    "suno": "a3bd3deb-bcf3-4630-959e-4111ff63e35c"
+  }
+}

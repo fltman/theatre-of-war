@@ -1,0 +1,296 @@
+[
+ {
+  "id": "announcer",
+  "file": "reel/announcer.mp4",
+  "seconds": 8,
+  "tags": [
+   "home",
+   "radio",
+   "press"
+  ]
+ },
+ {
+  "id": "artillery",
+  "file": "reel/artillery.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "battle",
+   "artillery",
+   "dusk"
+  ]
+ },
+ {
+  "id": "artillery_day",
+  "file": "reel/artillery_day.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "battle",
+   "artillery",
+   "forest"
+  ]
+ },
+ {
+  "id": "artillery_night",
+  "file": "reel/artillery_night.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "battle",
+   "artillery",
+   "night"
+  ]
+ },
+ {
+  "id": "bridge",
+  "file": "reel/bridge.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "river",
+   "engineers",
+   "aftermath"
+  ]
+ },
+ {
+  "id": "convoy",
+  "file": "reel/convoy.mp4",
+  "seconds": 8,
+  "tags": [
+   "sea",
+   "transport",
+   "convoy"
+  ]
+ },
+ {
+  "id": "convoy_harbor",
+  "file": "reel/convoy_harbor.mp4",
+  "seconds": 3.04,
+  "tags": [
+   "sea",
+   "transport",
+   "harbor",
+   "home"
+  ]
+ },
+ {
+  "id": "convoy_swell",
+  "file": "reel/convoy_swell.mp4",
+  "seconds": 8,
+  "tags": [
+   "sea",
+   "navy",
+   "convoy"
+  ]
+ },
+ {
+  "id": "crowd",
+  "file": "reel/crowd.mp4",
+  "seconds": 8,
+  "tags": [
+   "city",
+   "home",
+   "victory",
+   "celebration"
+  ]
+ },
+ {
+  "id": "desert",
+  "file": "reel/desert.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "desert",
+   "armor",
+   "advance"
+  ]
+ },
+ {
+  "id": "factory",
+  "file": "reel/factory.mp4",
+  "seconds": 8,
+  "tags": [
+   "home",
+   "industry"
+  ]
+ },
+ {
+  "id": "jungle",
+  "file": "reel/jungle.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "jungle",
+   "infantry",
+   "rain"
+  ]
+ },
+ {
+  "id": "landing",
+  "file": "reel/landing.mp4",
+  "seconds": 8,
+  "tags": [
+   "sea",
+   "landing",
+   "battle",
+   "beach"
+  ]
+ },
+ {
+  "id": "landing_aerial",
+  "file": "reel/landing_aerial.mp4",
+  "seconds": 8,
+  "tags": [
+   "sea",
+   "landing",
+   "battle"
+  ]
+ },
+ {
+  "id": "landing_rocky",
+  "file": "reel/landing_rocky.mp4",
+  "seconds": 8,
+  "tags": [
+   "sea",
+   "landing",
+   "battle",
+   "rain"
+  ]
+ },
+ {
+  "id": "march",
+  "file": "reel/march.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "infantry",
+   "march",
+   "mud"
+  ]
+ },
+ {
+  "id": "march_dawn",
+  "file": "reel/march_dawn.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "infantry",
+   "march",
+   "dawn"
+  ]
+ },
+ {
+  "id": "march_rain",
+  "file": "reel/march_rain.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "infantry",
+   "march",
+   "rain"
+  ]
+ },
+ {
+  "id": "ops_room",
+  "file": "reel/ops_room.mp4",
+  "seconds": 8,
+  "tags": [
+   "command",
+   "map"
+  ]
+ },
+ {
+  "id": "parade",
+  "file": "reel/parade.mp4",
+  "seconds": 8,
+  "tags": [
+   "city",
+   "victory",
+   "parade"
+  ]
+ },
+ {
+  "id": "presses",
+  "file": "reel/presses.mp4",
+  "seconds": 8,
+  "tags": [
+   "home",
+   "press",
+   "city"
+  ]
+ },
+ {
+  "id": "snow",
+  "file": "reel/snow.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "snow",
+   "winter",
+   "infantry",
+   "march"
+  ]
+ },
+ {
+  "id": "tanks_mud",
+  "file": "reel/tanks_mud.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "armor",
+   "battle",
+   "dusk"
+  ]
+ },
+ {
+  "id": "tanks_snow",
+  "file": "reel/tanks_snow.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "snow",
+   "winter",
+   "armor",
+   "advance"
+  ]
+ },
+ {
+  "id": "tanks_town",
+  "file": "reel/tanks_town.mp4",
+  "seconds": 8,
+  "tags": [
+   "land",
+   "city",
+   "armor",
+   "battle"
+  ]
+ },
+ {
+  "id": "warroom",
+  "file": "reel/warroom.mp4",
+  "seconds": 8,
+  "tags": [
+   "command",
+   "map"
+  ]
+ },
+ {
+  "id": "warroom_hand",
+  "file": "reel/warroom_hand.mp4",
+  "seconds": 8,
+  "tags": [
+   "command",
+   "map"
+  ]
+ },
+ {
+  "id": "warroom_wide",
+  "file": "reel/warroom_wide.mp4",
+  "seconds": 8,
+  "tags": [
+   "command",
+   "map"
+  ]
+ }
+]

@@ -1,0 +1,37 @@
+{
+  "name": "varldslaget",
+  "version": "0.1.0",
+  "description": "Animerat världskrigsspel på ett krigsrumsbord – trupper, radio, journalfilm och kvällstidningar.",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 8262",
+    "server": "node server/index.js",
+    "test": "node --test 'test/*.test.mjs'",
+    "map": "node tools/build_map.mjs",
+    "assets": "tools/build_assets.sh"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "n8ao": "^2.0.1",
+    "postprocessing": "^6.39.5",
+    "three": "^0.186.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.5.1",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "d3-geo": "^3.1.1",
+    "d3-geo-projection": "^4.0.0",
+    "mapshaper": "^0.7.98",
+    "meshoptimizer": "^1.3.0",
+    "playwright-core": "^1.64.1",
+    "polylabel": "^2.1.0",
+    "vite": "^8.3.5"
+  }
+}

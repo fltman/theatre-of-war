@@ -1,0 +1,69 @@
+/* Undertexter: radio = fjärrskrivarremsa, tv = filmtext. */
+.sub-root {
+  --sub-paper: #efe6cc;
+  --sub-ink: #1d1a15;
+  --sub-red: #a3231a;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  z-index: 900;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.3s ease, transform 0.35s ease;
+}
+.sub-root.sub-in { opacity: 1; transform: none; }
+.sub-radio { filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+.sub-radio .sub-text { text-shadow: 0 0 0.7px rgba(30, 22, 12, 0.6); }
+.sub-root.sub-out { opacity: 0; transform: translateY(6px); }
+
+/* Radio: en remsa fjärrskrivarpapper */
+.sub-radio .sub-strip {
+  position: relative;
+  max-width: min(860px, 100%);
+  padding: 10px 22px 13px;
+  color: var(--sub-ink);
+  background:
+    linear-gradient(90deg, rgba(110, 75, 30, 0.3), transparent 7%, transparent 93%, rgba(110, 75, 30, 0.3)),
+    linear-gradient(180deg, rgba(110, 75, 30, 0.18), transparent 25%, transparent 75%, rgba(110, 75, 30, 0.22)),
+    var(--tex-worn, var(--sub-paper)) 30% 40% / 260% auto;
+  transform: rotate(-0.4deg);
+  clip-path: polygon(0 4%, 3% 0, 7% 3%, 12% 0, 18% 2%, 26% 0, 34% 3%, 41% 0, 49% 2%, 57% 0, 66% 3%, 74% 0, 82% 2%, 90% 0, 96% 3%, 100% 1%,
+    100% 96%, 97% 100%, 91% 97%, 84% 100%, 76% 98%, 68% 100%, 60% 97%, 51% 100%, 43% 98%, 35% 100%, 27% 97%, 19% 100%, 11% 98%, 5% 100%, 0 97%);
+}
+.sub-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-family: 'Oswald', 'Arial Narrow', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.sub-who { color: var(--sub-red); font-weight: 700; border: 1.5px solid; padding: 0 6px; transform: rotate(-1.5deg); }
+.sub-station { opacity: 0.7; }
+.sub-radio .sub-text {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: clamp(16px, 2.1vw, 22px);
+  line-height: 1.35;
+  text-shadow: 0 0 0.7px rgba(29, 26, 21, 0.7);
+}
+.sub-caret { display: inline-block; width: 0.55em; height: 1em; margin-left: 2px; vertical-align: -0.12em; background: var(--sub-ink); animation: sub-blink 0.5s steps(1) infinite; }
+@keyframes sub-blink { 50% { opacity: 0; } }
+
+/* TV: klassisk filmtext */
+.sub-tv .sub-strip { max-width: min(980px, 100%); text-align: center; }
+.sub-tv .sub-text {
+  font-family: 'Old Standard TT', 'Georgia', serif;
+  font-weight: 700;
+  font-size: clamp(18px, 2.5vw, 30px);
+  line-height: 1.25;
+  color: #f4f0e6;
+  text-shadow: 0 0 2px #000, 0 0 2px #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 3px 10px rgba(0, 0, 0, 0.8);
+  text-wrap: balance;
+}

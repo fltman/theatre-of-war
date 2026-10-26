@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="icon" href="data:," />
+  <title>Press Room — Theatre of War</title>
+  <style>
+    :root { --bg: #16130f; --panel: #221d17; --ink: #e8dfc8; --dim: #9c917b; --line: #3a3228; --accent: #c9a24a; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.4 'Old Standard TT', Georgia, serif; }
+    header { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+    header h1 { margin: 0 12px 0 0; font: 400 26px 'UnifrakturMaguntia', serif; }
+    header label { font: 500 12px 'Oswald', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+    header input, header select, header button { font: 500 13px 'Oswald', sans-serif; background: #2c261e; color: var(--ink); border: 1px solid var(--line); padding: 4px 8px; }
+    header button { cursor: pointer; letter-spacing: .08em; text-transform: uppercase; }
+    header button.on { border-color: var(--accent); color: var(--accent); }
+    main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 680px); gap: 16px; padding: 16px; height: calc(100% - 56px); }
+    #list { overflow: auto; border: 1px solid var(--line); background: var(--panel); }
+    .row { display: grid; grid-template-columns: 44px 54px 1fr; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .row:hover { background: #2c261e; }
+    .row .m { font: 700 11px 'Oswald', sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+    .row .m.paper { color: #e8dfc8; } .row .m.radio { color: #c9a24a; } .row .m.tv { color: #8fb3c9; }
+    .row .r { color: var(--dim); font: 500 12px 'Oswald', sans-serif; }
+    .row .h { font-size: 14px; } .row .h small { display: block; color: var(--dim); font-style: italic; }
+    #reelbox { display: flex; flex-direction: column; gap: 10px; }
+    #reel { width: 100%; aspect-ratio: 4 / 3; background: #000; display: block; border: 6px solid #0c0a08; border-radius: 18px / 14px; box-shadow: 0 0 0 2px #3a3228, 0 20px 60px rgba(0,0,0,.6); }
+    #gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    #gallery canvas { width: 100%; aspect-ratio: 4/3; background: #000; }
+    .note { color: var(--dim); font-style: italic; }
+    @media (max-width: 760px) { main { grid-template-columns: 1fr; height: auto; } #list { max-height: 50vh; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>The Press Room</h1>
+    <label>Seed <input id="seed" type="number" value="7" style="width:70px" /></label>
+    <label>Armies <select id="players"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+    <label>Paper of <select id="persp"><option value="">Neutral</option><option value="0">Red</option><option value="1">Blue</option><option value="2">Green</option><option value="3">Yellow</option><option value="4">Black</option><option value="5">Purple</option></select></label>
+    <button id="run">New war</button>
+    <button id="scrap">Scrapbook</button>
+    <span style="flex:1"></span>
+    <button data-f="all" class="on">All</button><button data-f="paper">Papers</button><button data-f="radio">Radio</button><button data-f="tv">Newsreel</button>
+  </header>
+  <main>
+    <div id="list"></div>
+    <div id="reelbox">
+      <canvas id="reel" width="1280" height="960"></canvas>
+      <div class="note" id="note">Click a story. Papers spin in; radio prints on the teleprinter; newsreels play here.</div>
+      <div id="gallery"></div>
+    </div>
+  </main>
+  <script type="module" src="/src/press/demo.js"></script>
+</body>
+</html>

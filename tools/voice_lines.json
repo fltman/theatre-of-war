@@ -1,0 +1,191 @@
+{
+  "_om": "Röster och inställningar för den röstade frasboken (src/press/phrasebook.js). Replikerna själva ligger i frasboken; tools/gen_voice.py läser dem via node. Röstvalen är PROV tills användaren har lyssnat och godkänt.",
+  "model": "eleven_v4",
+  "format": "mp3_44100_128",
+  "language": "en",
+  "credits_per_char": [
+    1.0,
+    1.0
+  ],
+  "_kostnad": "Uppmätt ur genereringshistoriken 2026-10-26: eleven_v4 debiteras exakt 1 kredit per tecken (inkl. taggar), både en replik per anrop (497/497) och batchat (511/511) – batchning sparar inget. Första provpaketet: 1025/1025. Röstdesignens förhandslyssningar debiterades inte.",
+  "chosen": {
+    "_om": "Användarens val 2026-10-26 (röstdesign, eleven_ttv_v3). Biblioteksrösterna förkastades: 'gillar inte alls rösterna'.",
+    "announcer": {
+      "take": "announcer-design-take3.mp3",
+      "generated_voice_id": "ZdWesz71VWQVCjEZIoUF",
+      "name": "ToW Announcer"
+    },
+    "reporter": {
+      "take": "reporter-design-take3.mp3",
+      "generated_voice_id": "qLYVNbbKaFJgaFq6LWw5",
+      "name": "ToW Correspondent"
+    },
+    "narrator": {
+      "take": "narrator-design-take1.mp3",
+      "generated_voice_id": "04y6M6e6TycUaIWi5hsB",
+      "name": "ToW Newsreel Narrator"
+    }
+  },
+  "voices": {
+    "announcer": {
+      "voice_id": "ZdWesz71VWQVCjEZIoUF",
+      "name": "ToW Announcer",
+      "source": "design",
+      "take": "announcer-design-take3.mp3",
+      "generated_voice_id": "ZdWesz71VWQVCjEZIoUF"
+    },
+    "reporter": {
+      "voice_id": "qLYVNbbKaFJgaFq6LWw5",
+      "name": "ToW Correspondent",
+      "source": "design",
+      "take": "reporter-design-take3.mp3",
+      "generated_voice_id": "qLYVNbbKaFJgaFq6LWw5"
+    },
+    "narrator": {
+      "voice_id": "04y6M6e6TycUaIWi5hsB",
+      "name": "ToW Newsreel Narrator",
+      "source": "design",
+      "take": "narrator-design-take1.mp3",
+      "generated_voice_id": "04y6M6e6TycUaIWi5hsB"
+    }
+  },
+  "design": {
+    "model": "eleven_ttv_v3",
+    "announcer": {
+      "description": "A 1950s network radio news announcer, male, in his fifties, with a refined mid-Atlantic accent halfway between American and British. Warm baritone, crisp clipped diction, unhurried authority, measured pace with deliberate pauses, gravely calm even when the news is dramatic. Clean close-mic studio recording, no room echo, no music, no noise.",
+      "text": "We interrupt this program to bring you a special bulletin. Germany has fallen after heavy fighting on the Rhine. The Yellow Army has broken through, and the Red Army is reported to be in full retreat. Casualties are said to be heavy on both sides. Further details as they reach us. Stay tuned to this station."
+    },
+    "reporter": {
+      "description": "A young American war correspondent in his early thirties, reporting live from the front lines in the 1950s. Slightly breathless and hoarse, speaking quickly and urgently as if he has just been running, voice raised over wind and distant gunfire, excited but keeping his composure. Clean close-mic recording, no background noise, no music.",
+      "text": "This is your correspondent at the front. The guns have been firing since dawn. We had to take cover twice on the way up here, and the shelling hasn't stopped. The landing craft are going in now. I can see them hitting the beach. The first wave is ashore. I repeat, the first wave is ashore!"
+    },
+    "narrator": {
+      "description": "A bombastic 1950s cinema newsreel narrator, male, in his forties, with a mid-Atlantic accent. Booming, resonant, larger-than-life voice, rapid staccato delivery, triumphant and theatrical, every sentence delivered as an exclamation with dramatic emphasis. Clean close-mic studio recording, no room echo, no music, no noise.",
+      "text": "Atlas Newsreel takes you to the front! The battle for Germany! The Yellow Army strikes! The tanks roll forward through fire and smoke! Street by street, house by house! The objective is taken! Victory for the Yellow Army! And so the war goes on!"
+    }
+  },
+  "sample": {
+    "announcer": [
+      "open.bulletin.1",
+      "t.germany.fall.2",
+      "f.yellow.advance.1",
+      "f.red.retreat.2",
+      "color.1",
+      "close.3"
+    ],
+    "reporter": [
+      "rep.gen.1",
+      "rep.gen.3",
+      "rep.snow.1",
+      "rep.desert.1",
+      "rep.sea.2",
+      "rep.sea.3"
+    ],
+    "narrator": [
+      "n.intro.1",
+      "n.t.germany",
+      "n.f.yellow.strike.1",
+      "n.battle.3",
+      "n.won.1",
+      "n.f.yellow.triumph.1"
+    ]
+  },
+  "sample2": {
+    "announcer": {
+      "single": [
+        "open.news.2",
+        "t.france.fall.2",
+        "close.2"
+      ],
+      "batch": [
+        "open.bulletin.2",
+        "t.japan.fall.2",
+        "color.9"
+      ]
+    },
+    "reporter": {
+      "single": [
+        "rep.gen.2",
+        "rep.city.1",
+        "rep.jungle.1"
+      ],
+      "batch": [
+        "rep.snow.2",
+        "rep.desert.2",
+        "rep.land.3"
+      ]
+    },
+    "narrator": {
+      "single": [
+        "n.intro.2",
+        "n.t.france",
+        "n.f.blue.strike.2"
+      ],
+      "batch": [
+        "n.city.1",
+        "n.held.1",
+        "n.close.1"
+      ]
+    }
+  },
+  "rejected_library": {
+    "_om": "Provades i första provpaketet (build/voice-samples/) och förkastades av användaren.",
+    "voices": {
+      "announcer": {
+        "voice_id": "dqbqOZM4uhsyx1WtTAgT",
+        "name": "Max - 1940s RP British voice",
+        "source": "library",
+        "why": "Biblioteket: 'A 1940s British announcer's voice, great for newsreels.' Krispig RP, tidstypisk hallåman. Närmast 'mid-Atlantic/brittisk 50-talston'."
+      },
+      "reporter": {
+        "voice_id": "hU1ratPhBTZNviWitzAh",
+        "name": "Curt - Midwestern Storyteller",
+        "source": "library",
+        "why": "Biblioteket saknar en andfådd fältkorrespondent; Curt är ung, amerikansk och livlig. Röstdesignen är troligen bättre här – se design.reporter."
+      },
+      "narrator": {
+        "voice_id": "QMJTqaMXmGnG8TCm8WQG",
+        "name": "Clyde - Vintage and Warm Radio Announcer",
+        "source": "library",
+        "why": "Biblioteket: 'A vintage male announcer – think old timey radio!' Amerikansk 40/50-talsklang som tål [excited]. Röstdesignen kan ge en mer dånande journalfilmsspeaker."
+      }
+    },
+    "alternatives": {
+      "announcer": [
+        {
+          "voice_id": "MttcBdHlfJSKTSBOKkJB",
+          "name": "Jim - Warm & Welcoming Mid-Atlantic",
+          "why": "mid-Atlantic baryton, lugn auktoritet"
+        },
+        {
+          "voice_id": "7bkVPISi1Px9rahRsmjF",
+          "name": "Retro Radio Man VF – Classic Transatlantic",
+          "why": "retro transatlantisk berättare"
+        }
+      ],
+      "reporter": [
+        {
+          "voice_id": "lh03wW2cCRf05ksqPizq",
+          "name": "Rollin - Midwest US newscaster",
+          "why": "nyhetsuppläsare, äldre och lugnare"
+        }
+      ],
+      "narrator": [
+        {
+          "voice_id": "CeNX9CMwmxDxUF5Q2Inm",
+          "name": "Johnny Dynamite - Vintage Radio DJ",
+          "why": "uppskruvad 50-talsröst, risk för parodi"
+        },
+        {
+          "voice_id": "dqbqOZM4uhsyx1WtTAgT",
+          "name": "Max - 1940s RP British voice",
+          "why": "brittisk journalfilm (Pathé-känsla) i stället för amerikansk"
+        }
+      ]
+    }
+  },
+  "batching": {
+    "rekommendation": "en replik per anrop",
+    "varför": "Samma pris. Batchat: hallåmannens klippkanter hamnar delvis i ljud (-47 till -58 dBFS mot -85 till -99 i tystnad), ett klipp fick bara 30 ms efter sista ordet, och öppningsfrasen lästes snabbare (24,5 mot 14–16 tecken/s)."
+  }
+}
