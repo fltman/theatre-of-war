@@ -4,7 +4,7 @@
 // anfall tar en kontinent, slår ut en spelare eller ger turens kort), flytta reserver från inlandet till fronten.
 import { TERRITORY, CONTINENTS, CONTINENT, CARDS } from './map.js';
 import { AI_STYLES } from './factions.js';
-import { sets, owned, ownsContinent, path } from './engine.js';
+import { sets, owned, ownsContinent, path, apply, income } from './engine.js';
 
 const STYLE = {
   aggressive: { ratio: 1.0, stop: 1, split: 0 },
@@ -40,7 +40,7 @@ function targetValue(st, p, t, wish) {
   return v;
 }
 
-export function decide(st) {
+export function heuristic(st) {
   const p = st.turn;
   const me = st.players[p];
   const style = styleOf(st, p);
@@ -140,3 +140,130 @@ function fortify(st, p) {
 }
 
 export { AI_STYLES };
+
+// ------------------------------------------------------------------ framåtblick (Monte Carlo)
+//
+// Vid de viktiga besluten – var förstärkningen placeras och om/var generalen anfaller – prövas de bästa
+// alternativen (plus att låta bli) genom att spela kriget framåt flera gånger med olika tärningar: resten av den
+// egna turen och sedan varje motståndares nästa tur, med den regelbaserade policyn ovan. Slutlägena värderas och
+// alternativet med högst medelvärde väljs. Fröna härleds ur läget, så beslutet är deterministiskt.
+
+const THINK = {
+  aggressive: { rollouts: 3, cands: 3, terr: 1.25, safety: 0.6 },
+  strategist: { rollouts: 5, cands: 4, terr: 1.0, safety: 1.0 },
+  cautious: { rollouts: 3, cands: 3, terr: 0.85, safety: 1.5 },
+};
+const MAX_PLAYOUT = 260;           // säkerhetsgräns för antal drag i en simulering
+
+function mix(a, b) { let h = (a ^ Math.imul(b, 0x9e3779b1)) >>> 0; h = Math.imul(h ^ (h >>> 15), 0x85ebca6b); return (h ^ (h >>> 13)) >>> 0; }
+
+// Hur bra ett läge är för spelare p (jämfört med den starkaste motståndaren).
+export function evaluate(st, p, w = THINK.strategist) {
+  if (st.phase === 'over') return st.winner === p ? 1e4 : -1e4;
+  if (!st.players[p].alive) return -5e3;
+  const strength = (q) => {
+    const mine = owned(st, q);
+    const armies = mine.reduce((n, t) => n + st.armies[t], 0);
+    const inc = income(st, q);
+    let exposed = 0;
+    for (const t of mine) {
+      const foe = TERRITORY[t].neighbors.reduce((n, x) => n + (st.owner[x] !== q ? st.armies[x] : 0), 0);
+      if (foe) exposed += Math.max(0, foe - st.armies[t]);
+    }
+    return mine.length * w.terr + inc.continents.reduce((n, c) => n + c.bonus, 0) * 2.2 + armies * 0.12
+      + inc.total * 0.8 + st.players[q].cards.length * 0.6 - exposed * 0.06 * w.safety;
+  };
+  let best = -Infinity;
+  st.players.forEach((pl, q) => { if (q !== p && pl.alive) best = Math.max(best, strength(q)); });
+  return strength(p) - 0.45 * best;
+}
+
+// Spela vidare med policyn tills det åter är p:s tur (eller kriget tar slut).
+function playout(st, p) {
+  let n = 0, left = false;
+  while (st.phase !== 'over' && n++ < MAX_PLAYOUT) {
+    if (st.turn !== p) left = true;
+    else if (left) break;
+    st = apply(st, heuristic(st)).state;
+  }
+  return st;
+}
+
+function score(st, action, p, w, seed) {
+  let sum = 0;
+  for (let k = 0; k < w.rollouts; k++) {
+    try {
+      const s0 = { ...st, rng: mix(seed, k + 1) };
+      let s1 = apply(s0, action).state;
+      s1 = playout(s1, p);
+      sum += evaluate(s1, p, w);
+    } catch { return -Infinity; }
+  }
+  return sum / w.rollouts;
+}
+
+// Kandidater för förstärkningen: de bästa platserna enligt policyns egen värdering.
+function placementCandidates(st, p, n) {
+  const wish = continentWish(st, p);
+  const scored = owned(st, p).filter((t) => enemyNeighbors(st, t).length).map((t) => {
+    let opp = 0;
+    for (const x of enemyNeighbors(st, t)) opp = Math.max(opp, targetValue(st, p, x, wish) * Math.min(2, (st.armies[t] + st.pending - 1) / (st.armies[x] + 1)));
+    const c = TERRITORY[t].continent;
+    const guard = ownsContinent(st, p, c) ? Math.max(0, threat(st, t) - st.armies[t]) * 0.6 : 0;
+    return { t, s: opp + guard + wish[c] * 0.5 };
+  }).sort((a, b) => b.s - a.s);
+  return scored.slice(0, n).map((x) => x.t);
+}
+
+// Kandidater för anfall: de bästa enligt policyn, utan kvotkravet (simuleringen avgör), plus "sluta".
+function attackCandidates(st, p, n, style) {
+  const wish = continentWish(st, p);
+  const list = [];
+  for (const from of owned(st, p)) {
+    const force = st.armies[from] - 1;
+    if (force < 1) continue;
+    for (const to of enemyNeighbors(st, from)) {
+      const ratio = force / st.armies[to];
+      if (ratio < 0.6) continue;
+      list.push({ from, to, s: targetValue(st, p, to, wish) * Math.min(ratio, 3) });
+    }
+  }
+  list.sort((a, b) => b.s - a.s);
+  return list.slice(0, n).map(({ from, to }) => ({ type: 'blitz', from, to, stopAt: Math.max(style.stop, Math.ceil(st.armies[to] * 0.5)) }))
+    .map((a) => ({ ...a, stopAt: Math.min(a.stopAt, st.armies[a.from] - 1) }));
+}
+
+// Generalens beslut. think: false = bara regelbaserat (snabbt, t.ex. i simuleringar och tester).
+export function decide(st, { think = true } = {}) {
+  const p = st.turn;
+  const base = heuristic(st);
+  if (!think) return base;
+  const w = THINK[st.players[p].ai] ?? THINK.strategist;
+  const style = styleOf(st, p);
+  const seed = mix(st.rng >>> 0, (st.round << 8) ^ (p << 4) ^ st.pending);
+
+  if (st.phase === 'reinforce' && base.type === 'place' && st.pending > 0) {
+    const cands = placementCandidates(st, p, w.cands);
+    if (cands.length < 2) return base;
+    let best = base, bestScore = -Infinity;
+    for (const t of cands) {
+      const a = { type: 'place', territory: t, n: st.pending };
+      const sc = score(st, a, p, w, seed);
+      if (sc > bestScore) { bestScore = sc; best = a; }
+    }
+    return best;
+  }
+
+  if (st.phase === 'attack') {
+    const cands = attackCandidates(st, p, w.cands, style);
+    if (!cands.length) return base;
+    const stop = base.type === 'blitz' ? { type: 'endAttack' } : base;   // "sluta anfalla": policyns förflyttning/turslut
+    let best = stop, bestScore = score(st, stop, p, w, seed);
+    for (const a of cands) {
+      const sc = score(st, a, p, w, seed);
+      if (sc > bestScore + 0.05) { bestScore = sc; best = a; }
+    }
+    return best;
+  }
+  return base;
+}

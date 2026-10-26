@@ -24,7 +24,10 @@ Konsolen: `window.TW` (world, board, rig, fx, hud, director, ui, props, dice, pr
 
 - `shared/` – ren JS, delas av klient, server och test: `map.js` (42 territorier, grannar, kort), `factions.js`,
   `engine.js` (regler: `newGame` -> `{state, events}`, `apply(state, action)` -> `{state, events}`, kastar vid otillåtet drag,
-  seedad slump i `state.rng`), `ai.js` (`decide(state)`, deterministisk, tre personligheter), `rng.js`.
+  seedad slump i `state.rng`), `ai.js` (generalerna: `heuristic(state)` = regelbaserad policy; `decide(state)` = Monte Carlo-
+  framåtblick vid förstärkning och anfall: de bästa alternativen + "sluta" spelas framåt med olika tärningar till generalens
+  nästa tur och slutlägena värderas med `evaluate`; deterministisk, ~30 ms/beslut; `decide(s, { think: false })` = snabbt.
+  I webbläsaren körs den i `src/aiworker.js`. Turnering 16 partier: tänkande 15 – regelbaserade 1), `rng.js`.
 - `src/world.js` – renderare, ljus (taklampa, fönster, motljus), bord, efterbehandling (N8AO, skärpedjup, bloom, AgX, korn).
 - `src/mapcanvas.js` – den tryckta kartan som canvastextur (8192 px; mobil 4096). `src/board.js` – laveringen per territorium
   (shader, multiplicerad över papperet; erövring flyter ut från anfallspunkten; markeringar: streck/korsstreck), garnisoner

@@ -4,6 +4,19 @@ import { newGame, apply } from '../shared/engine.js';
 import { decide } from '../shared/ai.js';
 import { wait, speed } from './anim.js';
 
+// Generalerna tänker i en Web Worker; finns ingen (äldre webbläsare) tänker de i huvudtråden.
+let worker = null, nextId = 1;
+const waiting = new Map();
+function think(state) {
+  try {
+    worker ??= new Worker(new URL('./aiworker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = (e) => { const w = waiting.get(e.data.id); waiting.delete(e.data.id); e.data.error ? w.reject(new Error(e.data.error)) : w.resolve(e.data.action); };
+  } catch { return Promise.resolve(decide(state)); }
+  const id = nextId++;
+  return new Promise((resolve, reject) => { waiting.set(id, { resolve, reject }); worker.postMessage({ id, state, think: true }); })
+    .catch(() => decide(state, { think: false }));
+}
+
 const KEY = 'tow.lastGame';
 
 export class LocalGame {
@@ -48,8 +61,8 @@ export class LocalGame {
       const p = this.state.players[this.state.turn];
       let action;
       if (p.kind === 'ai') {
-        if (speed.factor < 50) await wait(0.12);
-        action = decide(this.state);
+        const [a] = await Promise.all([think(this.state), speed.factor < 50 ? wait(0.12) : null]);
+        action = a;
       } else {
         action = await this.ui.ask(this.state);
         if (!action || this.stopped) continue;

@@ -59,7 +59,7 @@ function play(seed, n, styles) {
   let actions = 0;
   const counts = {};
   while (state.phase !== 'over' && state.round <= 250) {
-    const a = decide(state);
+    const a = decide(state, { think: false });
     const r = apply(state, a);
     state = r.state;
     actions++;
@@ -80,4 +80,13 @@ test('AI mot AI spelar klart utan otillåtna drag', () => {
   }
   console.table(results);
   assert.ok(results.filter((r) => r.over).length >= 10, 'de flesta partier ska ta slut inom 250 rundor');
+});
+
+test('framåtblicken ger bara lagliga drag och är deterministisk', () => {
+  let { state } = newGame({ seed: 77, players: ['red', 'blue', 'green'].map((f, i) => ({ faction: f, ai: ['aggressive', 'strategist', 'cautious'][i] })) });
+  for (let i = 0; i < 120 && state.phase !== 'over'; i++) {
+    const a = decide(state);
+    assert.deepEqual(decide(state), a, 'samma läge ska ge samma beslut');
+    state = apply(state, a).state;            // kastar om draget är otillåtet
+  }
 });
