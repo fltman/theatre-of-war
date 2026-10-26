@@ -62,12 +62,82 @@
   "hash": "2b35ae96a2",
   "lufs_in": -19.6
  },
+ "close.12": {
+  "file": "close.12.mp3",
+  "seconds": 1.84,
+  "speaker": "announcer",
+  "hash": "6b6c8b5fdc",
+  "lufs_in": -19.1
+ },
+ "close.13": {
+  "file": "close.13.mp3",
+  "seconds": 2.88,
+  "speaker": "announcer",
+  "hash": "334685f58c",
+  "lufs_in": -19.6
+ },
+ "close.14": {
+  "file": "close.14.mp3",
+  "seconds": 3.6,
+  "speaker": "announcer",
+  "hash": "68451dca1b",
+  "lufs_in": -19.4
+ },
+ "close.15": {
+  "file": "close.15.mp3",
+  "seconds": 3.2,
+  "speaker": "announcer",
+  "hash": "8b3adfe75f",
+  "lufs_in": -19.9
+ },
+ "close.16": {
+  "file": "close.16.mp3",
+  "seconds": 3.44,
+  "speaker": "announcer",
+  "hash": "44ccf83d7a",
+  "lufs_in": -18.8
+ },
+ "close.17": {
+  "file": "close.17.mp3",
+  "seconds": 4.88,
+  "speaker": "announcer",
+  "hash": "595982c106",
+  "lufs_in": -19.7
+ },
+ "close.18": {
+  "file": "close.18.mp3",
+  "seconds": 2.24,
+  "speaker": "announcer",
+  "hash": "9bf2ce7a93",
+  "lufs_in": -20.1
+ },
+ "close.19": {
+  "file": "close.19.mp3",
+  "seconds": 3.6,
+  "speaker": "announcer",
+  "hash": "7c12196467",
+  "lufs_in": -19.9
+ },
  "close.2": {
   "file": "close.2.mp3",
   "seconds": 2.48,
   "speaker": "announcer",
   "hash": "f6902065c3",
   "lufs_in": -19.2
+ },
+ "close.20": {
+  "file": "close.20.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "d3e44f12e8",
+  "lufs_in": -18.7
+ },
+ "close.21": {
+  "file": "close.21.mp3",
+  "seconds": 3.76,
+  "speaker": "announcer",
+  "hash": "c4a1ccbb90",
+  "lufs_in": -19.5
  },
  "close.3": {
   "file": "close.3.mp3",
@@ -265,12 +335,54 @@
   "hash": "6ee47dd91d",
   "lufs_in": -19.1
  },
+ "color.29": {
+  "file": "color.29.mp3",
+  "seconds": 5.36,
+  "speaker": "announcer",
+  "hash": "8b743291d9",
+  "lufs_in": -19.9
+ },
  "color.3": {
   "file": "color.3.mp3",
   "seconds": 3.2,
   "speaker": "announcer",
   "hash": "101015e417",
   "lufs_in": -18.7
+ },
+ "color.30": {
+  "file": "color.30.mp3",
+  "seconds": 4.56,
+  "speaker": "announcer",
+  "hash": "58aea6b96c",
+  "lufs_in": -19.6
+ },
+ "color.31": {
+  "file": "color.31.mp3",
+  "seconds": 4.0,
+  "speaker": "announcer",
+  "hash": "2491bb35d0",
+  "lufs_in": -19.9
+ },
+ "color.32": {
+  "file": "color.32.mp3",
+  "seconds": 5.6,
+  "speaker": "announcer",
+  "hash": "b209e2be41",
+  "lufs_in": -19.9
+ },
+ "color.33": {
+  "file": "color.33.mp3",
+  "seconds": 3.92,
+  "speaker": "announcer",
+  "hash": "9cdc00d08c",
+  "lufs_in": -19.2
+ },
+ "color.34": {
+  "file": "color.34.mp3",
+  "seconds": 5.04,
+  "speaker": "announcer",
+  "hash": "86e3e21b9b",
+  "lufs_in": -19.8
  },
  "color.4": {
   "file": "color.4.mp3",
@@ -3135,6 +3247,27 @@
   "hash": "dba37e5027",
   "lufs_in": -18.3
  },
+ "open.bulletin.5": {
+  "file": "open.bulletin.5.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "adcf4b1087",
+  "lufs_in": -19.3
+ },
+ "open.bulletin.6": {
+  "file": "open.bulletin.6.mp3",
+  "seconds": 3.36,
+  "speaker": "announcer",
+  "hash": "48246d3351",
+  "lufs_in": -18.9
+ },
+ "open.bulletin.7": {
+  "file": "open.bulletin.7.mp3",
+  "seconds": 3.6,
+  "speaker": "announcer",
+  "hash": "8f25396928",
+  "lufs_in": -19.1
+ },
  "open.extra.1": {
   "file": "open.extra.1.mp3",
   "seconds": 3.04,
@@ -3156,12 +3289,47 @@
   "hash": "81de601c38",
   "lufs_in": -20.0
  },
+ "open.extra.4": {
+  "file": "open.extra.4.mp3",
+  "seconds": 3.76,
+  "speaker": "announcer",
+  "hash": "5a0fcc108c",
+  "lufs_in": -20.0
+ },
+ "open.extra.5": {
+  "file": "open.extra.5.mp3",
+  "seconds": 3.92,
+  "speaker": "announcer",
+  "hash": "7f77d7b803",
+  "lufs_in": -20.3
+ },
+ "open.extra.6": {
+  "file": "open.extra.6.mp3",
+  "seconds": 3.28,
+  "speaker": "announcer",
+  "hash": "e23c6b84a9",
+  "lufs_in": -19.4
+ },
  "open.news.1": {
   "file": "open.news.1.mp3",
   "seconds": 1.52,
   "speaker": "announcer",
   "hash": "0b600c1655",
   "lufs_in": -18.6
+ },
+ "open.news.10": {
+  "file": "open.news.10.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "5de87f18ee",
+  "lufs_in": -20.2
+ },
+ "open.news.11": {
+  "file": "open.news.11.mp3",
+  "seconds": 5.36,
+  "speaker": "announcer",
+  "hash": "301117b975",
+  "lufs_in": -19.9
  },
  "open.news.2": {
   "file": "open.news.2.mp3",
@@ -3204,6 +3372,20 @@
   "speaker": "announcer",
   "hash": "8cf1431c66",
   "lufs_in": -19.8
+ },
+ "open.news.8": {
+  "file": "open.news.8.mp3",
+  "seconds": 4.32,
+  "speaker": "announcer",
+  "hash": "c64835e138",
+  "lufs_in": -19.1
+ },
+ "open.news.9": {
+  "file": "open.news.9.mp3",
+  "seconds": 4.32,
+  "speaker": "announcer",
+  "hash": "6906012b17",
+  "lufs_in": -19.2
  },
  "rep.city.1": {
   "file": "rep.city.1.mp3",
@@ -3254,6 +3436,13 @@
   "hash": "e907b6348c",
   "lufs_in": -18.9
  },
+ "rep.gen.10": {
+  "file": "rep.gen.10.mp3",
+  "seconds": 5.12,
+  "speaker": "reporter",
+  "hash": "407f0120d4",
+  "lufs_in": -20.3
+ },
  "rep.gen.2": {
   "file": "rep.gen.2.mp3",
   "seconds": 3.44,
@@ -3288,6 +3477,27 @@
   "speaker": "reporter",
   "hash": "00680068ee",
   "lufs_in": -19.8
+ },
+ "rep.gen.7": {
+  "file": "rep.gen.7.mp3",
+  "seconds": 5.76,
+  "speaker": "reporter",
+  "hash": "fd79c42a70",
+  "lufs_in": -18.9
+ },
+ "rep.gen.8": {
+  "file": "rep.gen.8.mp3",
+  "seconds": 5.12,
+  "speaker": "reporter",
+  "hash": "257eaf5584",
+  "lufs_in": -19.3
+ },
+ "rep.gen.9": {
+  "file": "rep.gen.9.mp3",
+  "seconds": 6.08,
+  "speaker": "reporter",
+  "hash": "4c407b026b",
+  "lufs_in": -19.6
  },
  "rep.jungle.1": {
   "file": "rep.jungle.1.mp3",

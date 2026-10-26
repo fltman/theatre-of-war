@@ -41,6 +41,9 @@ many('open.bulletin', 'announcer', 'open.bulletin', [
   'We interrupt this broadcast for an important announcement.',
   'Ladies and gentlemen, we interrupt our regular program.',
   'This is a special news bulletin from Pan-Continental Radio.',
+  'We interrupt this broadcast to bring you news from the front.',
+  'We break into this program with a news bulletin just received.',
+  'This program is interrupted for a special report from our newsroom.',
 ], '[urgent]');
 many('open.news', 'announcer', 'open.news', [
   'Here is the news.',
@@ -50,11 +53,18 @@ many('open.news', 'announcer', 'open.news', [
   'And now, the news.',
   'Good evening, everyone. Here is the latest from the fronts.',
   'This is Pan-Continental Radio. Here are tonight’s war reports.',
+  'Good morning. This is Pan-Continental Radio with the morning news.',
+  'It is eight o’clock. Here is the news from Pan-Continental Radio.',
+  'Good afternoon. Here is the latest from the fronts.',
+  'This is Pan-Continental Radio. The time is midnight, and here is the late news.',
 ]);
 many('open.extra', 'announcer', 'open.extra', [
   'Ladies and gentlemen, stand by for a news flash.',
   'Flash! We have just received word from the front.',
   'Attention, please. Here is an urgent bulletin.',
+  'Stand by for an important announcement. This is a news flash.',
+  'Attention, all listeners. We have an urgent dispatch from the front.',
+  'Flash! This bulletin has just reached our newsroom.',
 ], '[urgent]');
 many('close', 'announcer', 'close', [
   'That is the end of the bulletin.',
@@ -68,6 +78,16 @@ many('close', 'announcer', 'close', [
   'We will bring you more as soon as it reaches us.',
   'That is all for now.',
   'We now resume our program, already in progress.',
+  'That is all the news for now.',
+  'Our next bulletin will follow at the top of the hour.',
+  'Further reports will be broadcast as soon as they reach this station.',
+  'We return you now to the Starlight Ballroom orchestra.',
+  'This bulletin came to you from the Pan-Continental newsroom.',
+  'Stay tuned. We will interrupt our regular programs if there are further developments.',
+  'That concludes this special bulletin.',
+  'Good night, ladies and gentlemen, and stay close to your radios.',
+  'The news continues on this station at eleven o’clock.',
+  'Pan-Continental Radio will bring you more as the story develops.',
 ]);
 
 // Allmän färg: kan följa vilken nyhet som helst.
@@ -100,6 +120,12 @@ many('color', 'announcer', 'color', [
   'Church bells rang out across the region, some in celebration, some in mourning.',
   'Blackout regulations remain in force.',
   'Recruiting offices report lines around the block.',
+  'Over the fronts tonight, rain and low cloud, with poor visibility for the air forces.',
+  'Civil defense wardens remind listeners to keep their blackout curtains drawn.',
+  'The sugar ration has been cut once more, effective Monday.',
+  'On the exchanges, armament shares rose sharply, while government bonds were unchanged.',
+  'Air raid shelters will remain open through the night as a precaution.',
+  'Listeners are asked to save scrap metal, rubber and tin cans for the war effort.',
 ]);
 
 many('war.start', 'announcer', 'war.start', [
@@ -213,6 +239,10 @@ const REP = {
     'From where I stand I can see smoke on the horizon, miles of it.',
     'The men here are tired, but they are holding together.',
     'I’ve just been told we have to move again. This is your correspondent, signing off.',
+    'I’m standing at a crossroads behind the lines. Ambulances have been coming through all afternoon.',
+    'We can hear the guns quite clearly from here. The men say it’s been like this for days.',
+    'This is your correspondent, speaking from a field telephone. The line is bad, so I’ll be brief.',
+    'The supply trucks are moving up in the dark, without lights. It’s slow going.',
   ],
   snow: [
     'It’s bitterly cold up here. The men’s breath freezes on their scarves.',

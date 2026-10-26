@@ -439,6 +439,8 @@ def fabric_tiled(name, tid, tint="#c9ad7c", rough=0.9, normal=1.0, res="1k"):
 # ---------------------------------------------------------------- specialmaterial (bakas inte)
 
 def special(name):
+    if name in bpy.data.materials:  # samma specialmaterial i flera föremål (t.ex. Glass): återanvänd
+        return bpy.data.materials[name]
     m, t = fresh(name)
     b = t.bsdf
     if name == "Glass":

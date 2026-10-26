@@ -447,7 +447,7 @@ def full(only=None):
 
     # 2) kontroll av råtagningarna; misstänkta görs om en gång
     bad = []
-    for l in lines:
+    for l in todo:  # bara det som spelades in nu – äldre tagningar är redan kontrollerade
         raw = RAW / f"{l['id']}.mp3"
         if raw.exists() and raw.stat().st_size > 0:
             if check(l, raw)["problems"]:
@@ -475,6 +475,8 @@ def full(only=None):
         dst = OUT / f"{l['id']}.mp3"
         if not raw.exists():
             return l, None
+        if dst.exists() and l["id"] in manifest and dst.stat().st_mtime >= raw.stat().st_mtime:
+            return l, None  # redan normaliserad från samma tagning
         v = SPEC["voices"][l["speaker"]]["voice_id"]
         h = text_hash(l, v)
         src_lufs = normalize(raw, dst)

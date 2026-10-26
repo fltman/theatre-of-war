@@ -75,8 +75,9 @@ function dataMaterial(src, { paint = null } = {}) {
         float wear = 0.0;
         #ifdef PAINT_WEAR
           float nz = n3(vObj * 160.0) * 0.55 + n3(vObj * 480.0) * 0.3 + n3(vObj * 1300.0) * 0.15;
-          wear = smoothstep(0.6, 0.85, vData.g) * smoothstep(0.3, 0.7, nz);
-          wear = smoothstep(0.25, 0.45, wear);
+          // bara skarpa kanter nöts (lindornas och kappans veck har måttlig krökning över stora ytor och ska inte flagna)
+          wear = smoothstep(0.72, 0.92, vData.g) * smoothstep(0.4, 0.7, nz);
+          wear = smoothstep(0.3, 0.5, wear) * 0.9;
           diffuseColor.rgb = mix(diffuseColor.rgb, uPewter, wear);
         #endif
         diffuseColor.rgb = mix(diffuseColor.rgb, uWash, clamp(vData.b * 0.75, 0.0, 1.0));

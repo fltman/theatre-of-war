@@ -788,7 +788,7 @@ def phone():
     P.append(twisted_cord("cord", [(0.86, 0.45, 0.32), (1.14, 0.5, 0.45), (1.22, 0.36, 0.8), (1.08, 0.27, 1.0)],
                           0.034, "PhoneCord", pitch=0.11, per_pitch=4, seg=5))
     P.append(twisted_cord("line", [(-0.45, 0.98, 0.18), (-0.55, 1.35, 0.04), (-1.2, 1.9, 0.04), (-2.2, 2.0, 0.04)],
-                          0.03, "PhoneCord", pitch=0.14, per_pitch=4, seg=4))
+                          0.03, "PhoneCord", pitch=0.17, per_pitch=4, seg=4))
     # förhöj baslinjen: lyft allt så att gummifötterna står på z = 0
     body = finish(P, "phone", 40)
     transform(body, loc=(0, 0, 0.03))
@@ -796,16 +796,15 @@ def phone():
     # ---- nummerskivan (egen nod): fingerhjul i nickel med tio hål, nummerlapp under plastfönster
     D = []
     wheel = lathe("fingerwheel", [(0.0, 0.0), (0.345, 0.0), (0.358, 0.012), (0.36, 0.035), (0.348, 0.05),
-                                  (0.15, 0.05), (0.138, 0.04), (0.0, 0.04)], seg=48, material="PhoneNickel")
+                                  (0.15, 0.05), (0.138, 0.04), (0.0, 0.04)], seg=40, material="PhoneNickel")
     for i in range(10):
         ang = math.radians(60 + i * 27)
         h = cyl(f"hole{i}", (math.cos(ang) * 0.315, math.sin(ang) * 0.315, -0.1),
-                (math.cos(ang) * 0.315, math.sin(ang) * 0.315, 0.2), 0.05, seg=14, material="PhoneNickel")
+                (math.cos(ang) * 0.315, math.sin(ang) * 0.315, 0.2), 0.05, seg=12, material="PhoneNickel")
         bo = wheel.modifiers.new(f"h{i}", "BOOLEAN")
         bo.operation = "DIFFERENCE"
         bo.solver = "EXACT"
         bo.object = h
-    add_bevel(wheel, 0.005, 1, 0.6)
     lib.apply_mods(wheel)
     for o in [o for o in bpy.data.objects if o.name.startswith("hole")]:
         bpy.data.objects.remove(o)
@@ -813,8 +812,6 @@ def phone():
     D.append(lathe("card", [(0.0, 0.042), (0.13, 0.042), (0.13, 0.046), (0.0, 0.046)], seg=40, material="PhoneCard"))
     D.append(text_mesh("cardtext", "KUNGSHOLM 12 34", 0.04, 0.001, "PhoneCardPrint", max_width=0.2))
     transform(D[-1], loc=(0, 0.018, 0.047))
-    D.append(text_mesh("cardtext2", "ARMSTRONG TELEFON", 0.025, 0.001, "PhoneCardPrint", max_width=0.17))
-    transform(D[-1], loc=(0, -0.04, 0.047))
     D.append(torus("retainer", (0, 0, 0.055), 0.136, 0.012, "PhoneNickel", seg=36, rseg=6))
     dial = finish(D, "dial", 40)
     window = lathe("window", [(0.0, 0.055), (0.13, 0.055), (0.13, 0.06), (0.0, 0.065)], seg=40, material="Glass")
