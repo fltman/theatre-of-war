@@ -18,4 +18,13 @@ npm run server   # online play (WebSocket :8261)
 npm test
 ```
 
-Map data: Natural Earth (public domain). Textures: Poly Haven (CC0). Fonts: see `public/fonts/`.
+## Licence
+
+- **Code:** [MIT](LICENSE).
+- **Game media** — models, textures, map artwork, voices, music, newsreel clips and the newsroom's copy:
+  [CC BY 4.0](LICENSE-ASSETS.md) (credit "Theatre of War by Anders Bjarby").
+- **Third-party:** map data from Natural Earth (public domain), source textures from Poly Haven (CC0), fonts under
+  their own licences in `public/fonts/`.
+- Voices made with ElevenLabs, music with Suno, newsreel footage with Google Flow (Veo).
+
+Theatre of War is an independent game and is not affiliated with Hasbro, Inc. "RISK" is a trademark of Hasbro, Inc.

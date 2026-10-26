@@ -4,7 +4,7 @@
   "description": "Animerat världskrigsspel på ett krigsrumsbord – trupper, radio, journalfilm och kvällstidningar.",
   "private": true,
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
