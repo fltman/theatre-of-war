@@ -110,10 +110,10 @@ test('krigsutbrottet kommer först, och segern blir extraupplaga', () => {
   }
 });
 
-test('månadsöversikten kommer varje ny runda och sänds den första', () => {
+test('månadsöversikten kommer var tredje månad och sänds den första', () => {
   for (const w of WARS) {
     const monthly = w.stories.filter((s) => s.kind === 'monthly');
-    assert.equal(monthly.length, w.state.round - 1);
+    assert.equal(monthly.length, Math.floor((w.state.round - 1) / 3));
     for (const s of monthly) {
       assert.match(s.date, / 1, 19/);
       assert.match(s.radio.lines[0].text, /The World Situation/);
@@ -228,7 +228,7 @@ test('radio och journalfilm består bara av frasbokens repliker', () => {
         assert.equal(l.text, pb.text);
         assert.equal(l.speaker, pb.speaker);
       }
-      assert.ok(s.radio.lines.length >= 3, s.id);
+      assert.ok(s.radio.lines.length >= 1, s.id);
       if (s.tv) {
         assert.ok(s.tv.clipTags.length >= 1 && s.tv.clipTags.length <= 2, s.id);
         for (const t of s.tv.clipTags) assert.ok(CLIP_TAGS.includes(t), t);
@@ -260,15 +260,18 @@ test('variation: ett 20-rundorskrig låter inte upprepat', () => {
       for (const l of ls) uses[l.id] = (uses[l.id] || 0) + 1;
     }
     const max = Math.max(...Object.values(uses));
-    assert.ok(heard.length >= 40, `${seed}: ${heard.length} sändningar`);
-    assert.ok(Object.keys(uses).length >= 150, `${seed}: bara ${Object.keys(uses).length} olika repliker`);
-    assert.ok(max <= 8, `${seed}: en replik hördes ${max} gånger`);
+    // Färre sändningar än förr (användaren: radion kom för ofta), men varierade: få upprepningar per replik.
+    const total = Object.values(uses).reduce((a, b) => a + b, 0);
+    assert.ok(heard.length >= 25 && heard.length <= 60, `${seed}: ${heard.length} sändningar`);
+    assert.ok(Object.keys(uses).length >= 100, `${seed}: bara ${Object.keys(uses).length} olika repliker`);
+    assert.ok(Object.keys(uses).length / total >= 0.6, `${seed}: för många upprepningar (${Object.keys(uses).length}/${total})`);
+    assert.ok(max <= 6, `${seed}: en replik hördes ${max} gånger`);
     // Samma öppning två radiosändningar i rad förekommer inte.
     const radio = heard.filter((s) => s.medium === 'radio');
     for (let i = 1; i < radio.length; i++) {
       const a = radio[i - 1].radio.lines[0].id;
       const b = radio[i].radio.lines[0].id;
-      assert.notEqual(a, b, `${seed}: samma öppning i rad (${a})`);
+      if (/^open/.test(a) && /^open/.test(b)) assert.notEqual(a, b, `${seed}: samma öppning i rad (${a})`);
     }
   }
 });

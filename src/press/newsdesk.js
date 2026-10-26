@@ -37,7 +37,7 @@ export class Newsdesk {
     this.voiceBags = new Bags(rng(seed + 1));
     this.spareBags = new Bags(rng(seed + 2));
     this.curBags = this.voiceBags;
-    this.budget = { paper: 1, tv: 1, radio: 2, ...budget };
+    this.budget = { paper: 1, tv: 1, radio: 1, ...budget };      // radion: ett inslag per månad (användaren: för ofta)
     this.used = { paper: 0, tv: 0, radio: 0 };
     this.usedRound = 0;
     this.round = 0;
@@ -84,8 +84,8 @@ export class Newsdesk {
           } else if (ev.round > this.round) {
             const prev = this.round;
             this.round = ev.round;
-            items.push(this.monthlyItem(prev));
-            this.snapshot();
+            // månadsöversikten bara var tredje månad
+            if ((ev.round - 1) % 3 === 0) { items.push(this.monthlyItem(prev)); this.snapshot(); }
           }
           break;
         }
@@ -268,7 +268,7 @@ export class Newsdesk {
       }
     }
     // Viktiga nyheter som inte fick plats någon annanstans blir åtminstone radio.
-    if (it.priority >= 50 && !it.media.includes('radio') && this.used.radio < this.budget.radio + 2) {
+    if (it.priority >= 50 && !it.media.includes('radio') && this.used.radio < this.budget.radio) {
       this.used.radio++;
       return 'radio';
     }
@@ -503,8 +503,17 @@ export class Newsdesk {
     return this.say('color');
   }
 
+  // Sändningens form varierar: öppningen hörs i ungefär hälften av sändningarna, avslutningen i en tredjedel och
+  // färgrepliken i hälften – så att de få öppnings-/avslutningsfraserna inte upprepas i varje sändning. Kärnan
+  // (själva nyheten) är alltid kvar.
   radio(lines) {
-    return { station: K.STATION, lines: lines.filter(Boolean) };
+    let L = lines.filter(Boolean);
+    const isOpen = (l) => /^open\./.test(l.id), isClose = (l) => /^close/.test(l.id), isColor = (l) => /^color/.test(l.id);
+    const core = L.filter((l) => !isOpen(l) && !isClose(l) && !isColor(l));
+    if (core.length) {
+      L = L.filter((l) => (isOpen(l) ? this.random() < 0.5 : isClose(l) ? this.random() < 0.35 : isColor(l) ? this.random() < 0.5 : true));
+    }
+    return { station: K.STATION, lines: L };
   }
 
   // Bygger radioreserven för ett reportage som visas som tidning eller journalfilm (eget minne).

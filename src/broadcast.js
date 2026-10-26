@@ -86,6 +86,13 @@ export class Broadcast {
   async present(story, state, director) {
     const m = story.medium;
     if (!this.enabled[m]) return;
+    // Radion: inga småinslag, och minst 45 s mellan sändningar (utom riktigt stora händelser och månadsöversikten).
+    if (m === 'radio') {
+      const now = performance.now();
+      const major = story.priority >= 85 || story.kind === 'monthly';
+      if (story.priority < 50 && !major) return;
+      if (!major && now - (this.lastAir ?? -1e9) < 45000) return;
+    }
     this.abort = new AbortController();
     const signal = this.abort.signal;
     const big = m !== 'radio' || story.priority >= 50 || director.paceName === 'film' || story.kind === 'monthly';
@@ -94,10 +101,10 @@ export class Broadcast {
       if (m === 'paper') await this.paper(story, signal);
       else if (m === 'tv') await this.tv(story, signal);
       else if (m === 'radio') {
-        if (big) await this.radio(story, signal);
-        else this.strip(story);
+        await this.radio(story, signal);
       }
     } finally {
+      if (m === 'radio' || m === 'tv') this.lastAir = performance.now();
       this.abort = null;
       this.audio?.stop('static');          // inget brus får ligga kvar efter en sändning, hur den än slutade
       this.audio?.stop('projector');
