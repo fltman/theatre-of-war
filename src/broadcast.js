@@ -41,7 +41,8 @@ export class Broadcast {
   // Journalfilmsklipp (Google Flow, public/reel/clips.json) och röster (ElevenLabs, public/audio/voice/manifest.json).
   // Båda är valfria: saknas de används direktbilden från bordet respektive det syntetiska mumlet.
   async load() {
-    const get = (u) => fetch(new URL(u, document.baseURI)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    // listorna hämtas alltid färskt (nya röster/klipp ska synas direkt efter en driftsättning); filerna får cachas
+    const get = (u) => fetch(new URL(u, document.baseURI), { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     const [clips, voices] = await Promise.all([get('reel/clips.json'), get('audio/voice/manifest.json')]);
     this.clips = Array.isArray(clips) ? clips : [];
     this.voices = voices ?? {};

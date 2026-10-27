@@ -35,7 +35,7 @@ const world = new World(document.getElementById('scene'));
 bindWorld(world);
 
 const [data] = await Promise.all([
-  fetch(new URL('map/world.json', document.baseURI)).then((r) => r.json()),
+  fetch(new URL('map/world.json', document.baseURI), { cache: 'no-cache' }).then((r) => r.json()),
   loadFonts(),
   loadUnits(),
 ]);
