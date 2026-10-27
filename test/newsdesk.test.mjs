@@ -392,10 +392,22 @@ test('diplomati: pakter och svek blir tidningar, svek som extraupplaga', () => {
       assert.equal(s.paper.edition, 'Extra');
       assert.match(`${s.paper.headline} ${s.paper.deck}`, /betray|treach|stab|treaty|pact|ally|word/i, s.paper.headline);
     }
-    for (const s of pacts.filter((x) => x.paper)) {
-      assert.equal(s.paper.dateline, 'GENEVA');
-      assert.ok(s.radio.generic, 'pakt-radion är allmän tills röstade pakt-repliker finns');
+    for (const s of pacts.filter((x) => x.paper)) assert.equal(s.paper.dateline, 'GENEVA');
+    // pakt- och sveksändningarna är röstade: egna repliker, bara ur frasboken, aldrig en ensam rad
+    for (const s of pacts) {
+      assert.equal(s.radio.generic, undefined);
+      assert.ok(s.radio.lines.length >= 2, s.id);
+      assert.ok(s.radio.lines.some((l) => /^f\.[a-z]+\.pact$/.test(l.id)), `${s.id}: ingen paktreplik`);
+      assert.ok(s.tv && s.tv.narration.some((l) => /^n\.pact\./.test(l.id)), `${s.id}: ingen paktjournalfilm`);
     }
+    for (const s of bets) {
+      assert.ok(s.radio.lines.length >= 2, s.id);
+      assert.ok(s.radio.lines.some((l) => /^f\.[a-z]+\.betray\.\d$|^betray\.\d$/.test(l.id)), `${s.id}: ingen svekreplik`);
+      if (s.conquered) assert.ok(s.tv && s.tv.narration.some((l) => /^n\.f\.[a-z]+\.betray$/.test(l.id)), `${s.id}: ingen svekjournalfilm`);
+      for (const l of [...s.radio.lines, ...(s.tv ? s.tv.narration : [])]) assert.equal(LINE[l.id]?.text, l.text, l.id);
+    }
+    // pakter som inte får tidningsplats blir radio
+    assert.ok(pacts.every((s) => s.medium === 'paper' || s.medium === 'radio'));
     // upprepat svek säger det
     const again = bets.filter((s) => /again/i.test(`${s.paper.headline} ${s.paper.body.join(' ')}`) || /second|third|fourth/.test(s.paper.body.join(' ')));
     if (bets.length > 3) assert.ok(again.length >= 1, `${seed}: inget upprepat svek nämns`);

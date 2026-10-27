@@ -56,6 +56,7 @@ export class Newsdesk {
     this.monthCounts = null;
     this.lastConquer = null;
     this.betrayal = null;      // svek som väntar på sitt slag (samma drag)
+    this.diploMonth = { declined: 0, expired: 0 }; // till nästa månadsöversikt
     this.prevLead = null;
     this.state = null;
   }
@@ -135,13 +136,15 @@ export class Newsdesk {
         // telefondiplomati
         case 'pact':
           items.push({ kind: 'pact', round: this.round, a: ev.a, b: ev.b, months: ev.months, until: ev.until,
-            priority: 62, media: ['paper'], noRadio: true });
+            priority: 62, media: ['paper', 'radio'] });
           break;
         case 'declined':
           this.diploWire('declined', ev);
+          this.diploMonth.declined++;
           break;
         case 'pactExpired':
           this.diploWire('expired', ev);
+          this.diploMonth.expired++;
           break;
         case 'betrayal':
           this.betrayal = { ev, from: null, to: null };
@@ -743,9 +746,11 @@ export class Newsdesk {
     const d = this.dated(it);
     const c = { ...this.pactCtx(it.a, it.b, it.months, it.until, it.round), ...d, round: it.round, T: null };
     const focus = { territories: c.meet ? [c.meet[1], c.meet[0]] : [], players: [it.a, it.b] };
-    // Inga röstade pakt-repliker än: radioreserven är allmän och märkt som sådan.
-    const radio = { ...this.spare(true, () => this.radio([this.say('open.news'), this.say('color'), this.say('close')])), generic: true };
-    const out = { date: d.date, focus, radio };
+    const A = this.fid(it.a);
+    const B = this.fid(it.b);
+    const radio = this.spare(medium !== 'radio', () => this.radio([this.opener(it.priority), this.say(`f.pact:${A}`),
+      this.say(`f.pact:${B}`), this.say('pact'), this.random() < 0.4 ? this.say('color') : null, this.say('close')]));
+    const out = { date: d.date, focus, radio, tv: this.spare(true, () => this.pactReel(c, it)) };
     if (medium !== 'paper') return out;
     const P = this.perspective;
     if (P != null) {
@@ -777,8 +782,7 @@ export class Newsdesk {
     const d = this.dated(it);
     const c = this.betrayalCtx({ ...this.ctx(it), ...d }, it);
     const focus = { territories: [it.to, it.from], players: [it.player, it.defender] };
-    const radio = this.spare(medium !== 'radio', () => this.radio([this.say('open.extra'), this.say(`t.fight:${it.to}`),
-      this.say(`f.advance:${this.fid(it.player)}`), this.colour(it.to, { reporter: 0.4, sea: it.sea }), this.say('close')]));
+    const radio = this.spare(medium !== 'radio', () => this.radio(this.betrayalRadio(it, false)));
     const out = { date: d.date, focus, radio };
     if (medium !== 'paper') return out;
     if (this.perspective != null) return this.spinPaper(it, 'betrayal', c, out, null, null);
@@ -792,6 +796,59 @@ export class Newsdesk {
       extra: true,
     });
     return out;
+  }
+
+  // Radioversionen av ett svek: nyheten, sviken, den svikne och vad som hände på marken.
+  betrayalRadio(it, conquered) {
+    const P = this.fid(it.player);
+    const V = this.fid(it.defender);
+    return [
+      this.say('open.extra'),
+      this.say('betray'),
+      this.say(`f.betray:${P}`),
+      this.random() < 0.6 ? this.say(`f.betrayed:${V}`) : null,
+      conquered ? this.say(`t.fall:${it.to}`) : this.say(`t.fight:${it.to}`),
+      it.eliminated ? this.say(`f.out:${this.fid(it.eliminated.player)}`) : null,
+      this.say('close'),
+    ];
+  }
+
+  // Journalfilm om ett svek som ledde till erövring: speakerns svekrad på mellantexten.
+  betrayalReel(c, it) {
+    const clipTags = this.clipTags(it, 'battle');
+    return this.tv(c, {
+      title: `Treachery ${c.T.place}`,
+      subtitle: `${c.F.Army} turns on ${c.D.army}`,
+      map: { text: c.T.name, from: it.from, to: it.to, territories: [it.to, it.from] },
+      footage: cap(c.T.place),
+      outcome: `${c.T.name} taken`,
+      clipTags,
+      lines: {
+        title: this.say('n.intro'),
+        text: this.say(`n.f.betray:${this.fid(it.player)}`),
+        map: this.say(`n.t:${it.to}`),
+        footage: this.say(`n.tag:${clipTags[0]}`),
+        outcome: this.say('n.won'),
+      },
+    });
+  }
+
+  // Kort journalfilm om en pakt: handslag över kartbordet.
+  pactReel(c, it) {
+    const t = c.meet;
+    return this.tv(c, {
+      title: 'Pact Signed',
+      subtitle: `${c.A.Army} and ${c.B.army}`,
+      map: t ? { text: c.where ? cap(c.where) : 'The Border', from: t[0], to: t[1], territories: [t[1], t[0]] } : null,
+      outcome: 'Peace — for now',
+      clipTags: ['command'],
+      lines: {
+        title: this.say('n.intro'),
+        text: this.say('n.pact'),
+        map: t ? this.say('n.tag:command') : null,
+        outcome: this.say('n.close'),
+      },
+    });
   }
 
   writeStart(it, medium) {
@@ -865,6 +922,10 @@ export class Newsdesk {
     const r = this.random();
     if (r < 0.75 && delta.length && delta[0][1] > 0) lines.push(this.say(`f.good:${this.fid(delta[0][0])}`));
     if (r > 0.35 && delta.length > 1 && delta[delta.length - 1][1] < 0) lines.push(this.say(`f.bad:${this.fid(delta[delta.length - 1][0])}`));
+    // diplomatin sedan förra översikten (avböjda förslag, utgångna pakter)
+    if (this.diploMonth.expired) lines.push(this.sayId('expired.1'));
+    else if (this.diploMonth.declined) lines.push(this.sayId('declined.1'));
+    this.diploMonth = { declined: 0, expired: 0 };
     if (this.random() < 0.45) lines.push(this.say('m.color'));
     lines.push(this.say('m.close'));
     return {
@@ -961,6 +1022,8 @@ export class Newsdesk {
     const out = { date: d.date, focus, radio: this.radio(parts) };
 
     if (medium === 'tv') out.tv = gained ? this.continentReel(c, it, gained) : this.battleReel(c, it, true);
+    // Svek som ledde till erövring: journalfilmen följer med även när tidningen är huvudmediet.
+    if (lead === 'betrayal' && !out.tv) out.tv = this.spare(true, () => this.betrayalReel(c, it));
     if (medium !== 'paper') return out;
     if (this.perspective != null) return this.spinPaper(it, lead, c, out, gained, lost);
     return this.conquerPaper(it, lead, c, out, gained, lost);
@@ -968,7 +1031,8 @@ export class Newsdesk {
 
   conquerRadio(it, lead, c, { A, D, T, fc, lost }) {
     let parts;
-    if (lead === 'victory') parts = [this.say('open.extra'), this.say('war.over'), this.say(`f.win:${A}`), this.say('close')];
+    if (lead === 'betrayal') parts = this.betrayalRadio(it, true);
+    else if (lead === 'victory') parts = [this.say('open.extra'), this.say('war.over'), this.say(`f.win:${A}`), this.say('close')];
     else if (lead === 'eliminated' || lead === 'final') {
       parts = [this.say('open.bulletin'), this.say(`t.fall:${T}`), this.say(`f.out:${this.fid(it.eliminated.player)}`), fc,
         this.colour(T, { reporter: 0.3 }), this.say('close')];

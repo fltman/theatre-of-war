@@ -98,7 +98,11 @@ export class Broadcast {
     const big = m !== 'radio' || story.priority >= 50 || director.paceName === 'film' || story.kind === 'monthly';
     if (big) this.music?.duck(true);
     try {
-      if (m === 'paper') await this.paper(story, signal);
+      if (m === 'paper') {
+        await this.paper(story, signal);
+        // svek som ledde till erövring: extrabladet följs av journalfilmen med speakerns "Treachery!"
+        if (story.kind === 'betrayal' && story.tv && this.enabled.tv && !signal.aborted) await this.tv(story, signal);
+      }
       else if (m === 'tv') await this.tv(story, signal);
       else if (m === 'radio') {
         await this.radio(story, signal);

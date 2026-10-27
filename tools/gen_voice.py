@@ -358,6 +358,25 @@ def speak_retry(c, line, voice_id, dst, tries=6):
     return tries
 
 
+def trim_tail_blip(raw):
+    """Klipper bort en kort blipp efter utklingningen (modellen lägger ibland ett klick i sista 10–30 ms):
+    finns en tyst dal (< -52 dB) bland de sista 300 ms och sedan en stigning mot slutet, klipps det vid dalen."""
+    x = pcm(raw)
+    db = frames_db(x)
+    tail = db[-30:]
+    if len(tail) < 30 or tail[-1] < -45:
+        return False
+    valley = int(tail[:-3].argmin())
+    if tail[valley] > -52:
+        return False
+    cut = len(db) - 30 + valley + 1
+    keep = raw.with_suffix(".blip.mp3")
+    if not keep.exists():
+        keep.write_bytes(raw.read_bytes())
+    write_mp3(x[: cut * int(SR * 0.01)], raw, fade_out=0.03)
+    return True
+
+
 def normalize(raw, dst, lufs=-18.0, tp=-1.5):
     """Tvåpass-loudnorm till jämn nivå (linjär förstärkning när det går). Inga filter – spelet lägger på radioljudet."""
     r = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(raw), "-af", f"loudnorm=I={lufs}:TP={tp}:LRA=11:print_format=json",
@@ -493,6 +512,8 @@ def full(only=None):
             return l, None  # redan normaliserad från samma tagning
         v = SPEC["voices"][l["speaker"]]["voice_id"]
         h = text_hash(l, v)
+        if trim_tail_blip(raw):
+            log.setdefault("trimmed", []).append(l["id"])
         src_lufs = normalize(raw, dst)
         st = check(l, dst)
         return l, {"file": dst.name, "seconds": st["seconds"], "speaker": l["speaker"], "hash": h,

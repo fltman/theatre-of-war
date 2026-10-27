@@ -1,4 +1,25 @@
 {
+ "betray.1": {
+  "file": "betray.1.mp3",
+  "seconds": 2.8,
+  "speaker": "announcer",
+  "hash": "d69d7f95b1",
+  "lufs_in": -19.8
+ },
+ "betray.2": {
+  "file": "betray.2.mp3",
+  "seconds": 2.96,
+  "speaker": "announcer",
+  "hash": "028433089c",
+  "lufs_in": -18.5
+ },
+ "betray.3": {
+  "file": "betray.3.mp3",
+  "seconds": 2.64,
+  "speaker": "announcer",
+  "hash": "e94aa05bf6",
+  "lufs_in": -19.4
+ },
  "c.africa.lost": {
   "file": "c.africa.lost.mp3",
   "seconds": 3.44,
@@ -426,6 +447,20 @@
   "hash": "f2366a8b0b",
   "lufs_in": -19.4
  },
+ "declined.1": {
+  "file": "declined.1.mp3",
+  "seconds": 2.67,
+  "speaker": "announcer",
+  "hash": "f6ebd7b0d0",
+  "lufs_in": -19.9
+ },
+ "expired.1": {
+  "file": "expired.1.mp3",
+  "seconds": 3.36,
+  "speaker": "announcer",
+  "hash": "29fde0c6dc",
+  "lufs_in": -20.0
+ },
  "f.black.advance.1": {
   "file": "f.black.advance.1.mp3",
   "seconds": 2.24,
@@ -481,6 +516,27 @@
   "speaker": "announcer",
   "hash": "511d6b2af0",
   "lufs_in": -19.5
+ },
+ "f.black.betray.1": {
+  "file": "f.black.betray.1.mp3",
+  "seconds": 2.56,
+  "speaker": "announcer",
+  "hash": "84c54796a8",
+  "lufs_in": -19.9
+ },
+ "f.black.betray.2": {
+  "file": "f.black.betray.2.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "eab5393483",
+  "lufs_in": -19.4
+ },
+ "f.black.betrayed": {
+  "file": "f.black.betrayed.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "c0821477df",
+  "lufs_in": -19.4
  },
  "f.black.good.1": {
   "file": "f.black.good.1.mp3",
@@ -573,6 +629,13 @@
   "hash": "b4a299b862",
   "lufs_in": -21.2
  },
+ "f.black.pact": {
+  "file": "f.black.pact.mp3",
+  "seconds": 2.48,
+  "speaker": "announcer",
+  "hash": "0df1408338",
+  "lufs_in": -19.5
+ },
  "f.black.repulsed": {
   "file": "f.black.repulsed.mp3",
   "seconds": 2.72,
@@ -662,6 +725,27 @@
   "seconds": 3.6,
   "speaker": "announcer",
   "hash": "576a07fb3c",
+  "lufs_in": -19.4
+ },
+ "f.blue.betray.1": {
+  "file": "f.blue.betray.1.mp3",
+  "seconds": 2.4,
+  "speaker": "announcer",
+  "hash": "7db597618d",
+  "lufs_in": -19.2
+ },
+ "f.blue.betray.2": {
+  "file": "f.blue.betray.2.mp3",
+  "seconds": 3.04,
+  "speaker": "announcer",
+  "hash": "674fa9eba4",
+  "lufs_in": -19.3
+ },
+ "f.blue.betrayed": {
+  "file": "f.blue.betrayed.mp3",
+  "seconds": 3.04,
+  "speaker": "announcer",
+  "hash": "69423e7a6c",
   "lufs_in": -19.4
  },
  "f.blue.good.1": {
@@ -755,6 +839,13 @@
   "hash": "e849d56f27",
   "lufs_in": -21.1
  },
+ "f.blue.pact": {
+  "file": "f.blue.pact.mp3",
+  "seconds": 2.4,
+  "speaker": "announcer",
+  "hash": "b946d55e98",
+  "lufs_in": -19.3
+ },
  "f.blue.repulsed": {
   "file": "f.blue.repulsed.mp3",
   "seconds": 2.8,
@@ -844,6 +935,27 @@
   "seconds": 3.52,
   "speaker": "announcer",
   "hash": "3636000584",
+  "lufs_in": -19.3
+ },
+ "f.green.betray.1": {
+  "file": "f.green.betray.1.mp3",
+  "seconds": 2.56,
+  "speaker": "announcer",
+  "hash": "0f05937c46",
+  "lufs_in": -19.4
+ },
+ "f.green.betray.2": {
+  "file": "f.green.betray.2.mp3",
+  "seconds": 3.2,
+  "speaker": "announcer",
+  "hash": "e49a6d9b57",
+  "lufs_in": -19.4
+ },
+ "f.green.betrayed": {
+  "file": "f.green.betrayed.mp3",
+  "seconds": 3.2,
+  "speaker": "announcer",
+  "hash": "b17d0fefc1",
   "lufs_in": -19.3
  },
  "f.green.good.1": {
@@ -937,6 +1049,13 @@
   "hash": "7883b4bd01",
   "lufs_in": -21.4
  },
+ "f.green.pact": {
+  "file": "f.green.pact.mp3",
+  "seconds": 2.4,
+  "speaker": "announcer",
+  "hash": "413b585eaf",
+  "lufs_in": -19.6
+ },
  "f.green.repulsed": {
   "file": "f.green.repulsed.mp3",
   "seconds": 2.96,
@@ -1027,6 +1146,27 @@
   "speaker": "announcer",
   "hash": "ae066fb3cd",
   "lufs_in": -19.3
+ },
+ "f.purple.betray.1": {
+  "file": "f.purple.betray.1.mp3",
+  "seconds": 2.56,
+  "speaker": "announcer",
+  "hash": "eb613661d8",
+  "lufs_in": -19.4
+ },
+ "f.purple.betray.2": {
+  "file": "f.purple.betray.2.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "767fb3b4f0",
+  "lufs_in": -19.5
+ },
+ "f.purple.betrayed": {
+  "file": "f.purple.betrayed.mp3",
+  "seconds": 3.2,
+  "speaker": "announcer",
+  "hash": "3ed3f22ebb",
+  "lufs_in": -19.4
  },
  "f.purple.good.1": {
   "file": "f.purple.good.1.mp3",
@@ -1119,6 +1259,13 @@
   "hash": "6680a141fb",
   "lufs_in": -21.4
  },
+ "f.purple.pact": {
+  "file": "f.purple.pact.mp3",
+  "seconds": 2.4,
+  "speaker": "announcer",
+  "hash": "c569196c5e",
+  "lufs_in": -19.6
+ },
  "f.purple.repulsed": {
   "file": "f.purple.repulsed.mp3",
   "seconds": 2.8,
@@ -1209,6 +1356,27 @@
   "speaker": "announcer",
   "hash": "e6dacc57bd",
   "lufs_in": -19.5
+ },
+ "f.red.betray.1": {
+  "file": "f.red.betray.1.mp3",
+  "seconds": 2.64,
+  "speaker": "announcer",
+  "hash": "102e8fb10a",
+  "lufs_in": -19.4
+ },
+ "f.red.betray.2": {
+  "file": "f.red.betray.2.mp3",
+  "seconds": 2.96,
+  "speaker": "announcer",
+  "hash": "c7bb1bde34",
+  "lufs_in": -19.1
+ },
+ "f.red.betrayed": {
+  "file": "f.red.betrayed.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "8a2fb72c91",
+  "lufs_in": -19.4
  },
  "f.red.good.1": {
   "file": "f.red.good.1.mp3",
@@ -1301,6 +1469,13 @@
   "hash": "5185f1f8c2",
   "lufs_in": -21.0
  },
+ "f.red.pact": {
+  "file": "f.red.pact.mp3",
+  "seconds": 2.32,
+  "speaker": "announcer",
+  "hash": "1eeab358fd",
+  "lufs_in": -19.4
+ },
  "f.red.repulsed": {
   "file": "f.red.repulsed.mp3",
   "seconds": 2.8,
@@ -1392,6 +1567,27 @@
   "hash": "131356c4c8",
   "lufs_in": -19.1
  },
+ "f.yellow.betray.1": {
+  "file": "f.yellow.betray.1.mp3",
+  "seconds": 2.56,
+  "speaker": "announcer",
+  "hash": "2df0a26ea0",
+  "lufs_in": -19.1
+ },
+ "f.yellow.betray.2": {
+  "file": "f.yellow.betray.2.mp3",
+  "seconds": 3.12,
+  "speaker": "announcer",
+  "hash": "fb6397a8a8",
+  "lufs_in": -18.8
+ },
+ "f.yellow.betrayed": {
+  "file": "f.yellow.betrayed.mp3",
+  "seconds": 3.2,
+  "speaker": "announcer",
+  "hash": "d9bc22327e",
+  "lufs_in": -19.3
+ },
  "f.yellow.good.1": {
   "file": "f.yellow.good.1.mp3",
   "seconds": 2.48,
@@ -1482,6 +1678,13 @@
   "speaker": "announcer",
   "hash": "90c4f53532",
   "lufs_in": -20.8
+ },
+ "f.yellow.pact": {
+  "file": "f.yellow.pact.mp3",
+  "seconds": 2.32,
+  "speaker": "announcer",
+  "hash": "1c2a273924",
+  "lufs_in": -19.4
  },
  "f.yellow.repulsed": {
   "file": "f.yellow.repulsed.mp3",
@@ -2470,6 +2673,13 @@
   "hash": "9a26aa4f2d",
   "lufs_in": -18.4
  },
+ "n.f.black.betray": {
+  "file": "n.f.black.betray.mp3",
+  "seconds": 3.52,
+  "speaker": "narrator",
+  "hash": "3c2d296a73",
+  "lufs_in": -18.2
+ },
  "n.f.black.hold": {
   "file": "n.f.black.hold.mp3",
   "seconds": 2.48,
@@ -2539,6 +2749,13 @@
   "speaker": "narrator",
   "hash": "893a8a8804",
   "lufs_in": -18.5
+ },
+ "n.f.blue.betray": {
+  "file": "n.f.blue.betray.mp3",
+  "seconds": 3.44,
+  "speaker": "narrator",
+  "hash": "851414fee8",
+  "lufs_in": -18.6
  },
  "n.f.blue.hold": {
   "file": "n.f.blue.hold.mp3",
@@ -2610,6 +2827,13 @@
   "hash": "351a257628",
   "lufs_in": -18.6
  },
+ "n.f.green.betray": {
+  "file": "n.f.green.betray.mp3",
+  "seconds": 3.36,
+  "speaker": "narrator",
+  "hash": "6aa92cc11f",
+  "lufs_in": -18.4
+ },
  "n.f.green.hold": {
   "file": "n.f.green.hold.mp3",
   "seconds": 2.48,
@@ -2679,6 +2903,13 @@
   "speaker": "narrator",
   "hash": "7b2ad0c37c",
   "lufs_in": -17.6
+ },
+ "n.f.purple.betray": {
+  "file": "n.f.purple.betray.mp3",
+  "seconds": 3.6,
+  "speaker": "narrator",
+  "hash": "4e1b0e4b74",
+  "lufs_in": -18.0
  },
  "n.f.purple.hold": {
   "file": "n.f.purple.hold.mp3",
@@ -2750,6 +2981,13 @@
   "hash": "a8b813df59",
   "lufs_in": -17.9
  },
+ "n.f.red.betray": {
+  "file": "n.f.red.betray.mp3",
+  "seconds": 3.44,
+  "speaker": "narrator",
+  "hash": "86b06b1940",
+  "lufs_in": -17.6
+ },
  "n.f.red.hold": {
   "file": "n.f.red.hold.mp3",
   "seconds": 2.48,
@@ -2819,6 +3057,13 @@
   "speaker": "narrator",
   "hash": "228d7439fd",
   "lufs_in": -17.6
+ },
+ "n.f.yellow.betray": {
+  "file": "n.f.yellow.betray.mp3",
+  "seconds": 3.52,
+  "speaker": "narrator",
+  "hash": "70a63e1b9a",
+  "lufs_in": -18.2
  },
  "n.f.yellow.hold": {
   "file": "n.f.yellow.hold.mp3",
@@ -3071,6 +3316,20 @@
   "speaker": "narrator",
   "hash": "952df55160",
   "lufs_in": -18.5
+ },
+ "n.pact.1": {
+  "file": "n.pact.1.mp3",
+  "seconds": 3.6,
+  "speaker": "narrator",
+  "hash": "6808424a17",
+  "lufs_in": -18.6
+ },
+ "n.pact.2": {
+  "file": "n.pact.2.mp3",
+  "seconds": 2.96,
+  "speaker": "narrator",
+  "hash": "b6ad9e8da7",
+  "lufs_in": -19.3
  },
  "n.sea.1": {
   "file": "n.sea.1.mp3",
@@ -3638,6 +3897,27 @@
   "speaker": "announcer",
   "hash": "6906012b17",
   "lufs_in": -19.2
+ },
+ "pact.1": {
+  "file": "pact.1.mp3",
+  "seconds": 3.68,
+  "speaker": "announcer",
+  "hash": "42e0b2fd6c",
+  "lufs_in": -19.6
+ },
+ "pact.2": {
+  "file": "pact.2.mp3",
+  "seconds": 4.08,
+  "speaker": "announcer",
+  "hash": "6759ebd90d",
+  "lufs_in": -20.6
+ },
+ "pact.3": {
+  "file": "pact.3.mp3",
+  "seconds": 4.24,
+  "speaker": "announcer",
+  "hash": "92b93c1831",
+  "lufs_in": -19.4
  },
  "rep.city.1": {
   "file": "rep.city.1.mp3",

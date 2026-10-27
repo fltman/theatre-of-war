@@ -190,12 +190,31 @@ for (const f of FACTIONS) {
   F('good', 2, `${Army} gained the most ground last month.`);
   F('bad', 1, `It was a hard month for ${army}.`);
   F('bad', 2, `${Army} lost more ground than anyone last month.`);
+  // telefondiplomati (tillägg 2026-10-27)
+  F('pact', 0, `${Army} has signed a pact.`);
+  F('betray', 1, `${Army} has broken its word.`);
+  F('betray', 2, `${Army} has turned on its own ally.`);
+  F('betrayed', 0, `${Army} has been betrayed by its ally.`);
   for (const c of CONTINENTS) {
     add(`fc:${f.id}:${c.id}`, 'announcer', `fc.${f.id}.${c.id}`, `${Army} now holds all of ${c.name}.`);
     add(`fcs:${f.id}:${c.id}`, 'announcer', `fcs.${f.id}.${c.id}`, `${Army} still holds all of ${c.name}.`);
   }
 }
 for (const c of CONTINENTS) add(`c.lost:${c.id}`, 'announcer', `c.${c.id}.lost`, `${c.name} is no longer in a single pair of hands.`);
+
+// ------------------------------------------------------------------ radio: telefondiplomati (tillägg 2026-10-27)
+
+many('pact', 'announcer', 'pact', [
+  'A pact of non-aggression has been signed by telephone tonight.',
+  'The two armies have agreed not to fight one another, for a time.',
+  'Diplomats describe the talks as short and surprisingly cordial.',
+]);
+add('betray', 'announcer', 'betray.1', 'We have just received word of an act of treachery.', '[urgent]');
+add('betray', 'announcer', 'betray.2', 'A pact of non-aggression has been broken without warning.', '[urgent]');
+add('betray', 'announcer', 'betray.3', 'The ink on the treaty was hardly dry.');
+add('expired', 'announcer', 'expired.1', 'A pact between two armies expired at midnight.');
+add('declined', 'announcer', 'declined.1', 'An offer of peace has been refused.');
+many('n.pact', 'narrator', 'n.pact', ['Peace, for now! Two armies shake hands!', 'A pact is sealed! But for how long?'], '[excited]');
 
 // ------------------------------------------------------------------ radio: månadsöversikten
 
@@ -335,6 +354,7 @@ for (const f of FACTIONS) {
   N('strike', 5, `${cap(army)} breaks through!`, null);
   N('triumph', 3, `Glory for ${army}!`, null);
   N('triumph', 4, `${cap(army)} wins the day!`, null);
+  N('betray', 0, `Treachery! ${cap(army)} strikes its own ally!`);
 }
 for (const c of CONTINENTS) {
   add(`n.c:${c.id}`, 'narrator', `n.c.${c.id}.1`, `The fate of ${c.name} is sealed!`, '[excited]');
