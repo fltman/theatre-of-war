@@ -8,6 +8,7 @@ export const GENERALS = {
   red: {
     name: 'Augustin Crane', title: 'Field Marshal', short: 'Crane', temper: 'aggressive',
     portrait: 'img/generals/red.webp',
+    voice: 'a09wvNFb8WeSYKSGaq6Z',
     bio: 'A cavalryman who never forgave the horse for being replaced. Signs his orders in red pencil, and only once.',
     lines: {
       propose: [
@@ -26,6 +27,7 @@ export const GENERALS = {
   blue: {
     name: 'Ottilie Vance', title: 'General', short: 'Vance', temper: 'strategist',
     portrait: 'img/generals/blue.webp',
+    voice: 'p6ljUtutreIvQiNRK8Lk',
     bio: 'Former professor of logistics. Has never lost an argument, and keeps a ledger of everyone who tried.',
     lines: {
       propose: [
@@ -44,6 +46,7 @@ export const GENERALS = {
   green: {
     name: 'Edmund Harrowgate', title: 'Marshal', short: 'Harrowgate', temper: 'cautious',
     portrait: 'img/generals/green.webp',
+    voice: null,   // väntar: kontots tak för egna röster (160/160)
     bio: 'Has fought in more wars than anyone at the table and won them by being somewhere else. Never lights his pipe indoors.',
     lines: {
       propose: [
@@ -62,6 +65,7 @@ export const GENERALS = {
   yellow: {
     name: 'Casimir Dorne', title: 'General', short: 'Dorne', temper: 'aggressive',
     portrait: 'img/generals/yellow.webp',
+    voice: null,   // väntar: kontots tak för egna röster (160/160)
     bio: 'Promoted three times in one campaign and court-martialled twice. Both times the court apologised.',
     lines: {
       propose: [
@@ -80,6 +84,7 @@ export const GENERALS = {
   black: {
     name: 'Severin Moor', title: 'Field Marshal', short: 'Moor', temper: 'strategist',
     portrait: 'img/generals/black.webp',
+    voice: null,   // väntar: kontots tak för egna röster (160/160)
     bio: 'Plays seven games of chess by post at once and has not lost one since the old war. Speaks little, writes less.',
     lines: {
       propose: [
@@ -98,6 +103,7 @@ export const GENERALS = {
   purple: {
     name: 'Marguerite Ashby', title: 'General', short: 'Ashby', temper: 'cautious',
     portrait: 'img/generals/purple.webp',
+    voice: null,   // väntar: kontots tak för egna röster (160/160)
     bio: 'Defended a single bridge for forty days in the last war and has not been rushed by anyone since.',
     lines: {
       propose: [

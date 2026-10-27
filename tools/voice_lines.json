@@ -47,6 +47,20 @@
       "source": "design",
       "take": "narrator-design-take1.mp3",
       "generated_voice_id": "04y6M6e6TycUaIWi5hsB"
+    },
+    "general_red": {
+      "voice_id": "a09wvNFb8WeSYKSGaq6Z",
+      "name": "ToW General Crane",
+      "source": "design",
+      "generated_voice_id": "a09wvNFb8WeSYKSGaq6Z",
+      "general": "Field Marshal Augustin Crane"
+    },
+    "general_blue": {
+      "voice_id": "p6ljUtutreIvQiNRK8Lk",
+      "name": "ToW General Vance",
+      "source": "design",
+      "generated_voice_id": "p6ljUtutreIvQiNRK8Lk",
+      "general": "General Ottilie Vance"
     }
   },
   "design": {
