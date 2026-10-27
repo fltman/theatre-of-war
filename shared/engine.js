@@ -365,7 +365,11 @@ function endTurn(st, ev) {
     n = (n + 1) % st.players.length;
     if (n === 0) {
       st.round++;
-      for (const x of (st.pacts ?? []).filter((x) => x.until < st.round)) ev.push({ type: 'pactExpired', a: x.a, b: x.b });
+      for (const x of (st.pacts ?? []).filter((x) => x.until < st.round)) {
+        ev.push({ type: 'pactExpired', a: x.a, b: x.b });
+        // minns när pakten tog slut (generalerna förnyar inte med en gång)
+        for (const [p, q] of [[x.a, x.b], [x.b, x.a]]) st.players[p].pactEnded = { ...(st.players[p].pactEnded ?? {}), [q]: st.round };
+      }
       st.pacts = (st.pacts ?? []).filter((x) => x.until >= st.round);
       drawWorld(st, ev);
     }

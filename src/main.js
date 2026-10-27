@@ -14,6 +14,8 @@ import { UI } from './ui.js';
 import { LocalGame } from './game.js';
 import { FACTIONS, FACTION } from '../shared/factions.js';
 import { TERRITORY } from '../shared/map.js';
+import { GENERALS } from './generals.js';
+import { generalLine } from './diplomacy.js';
 import { Props } from './props.js';
 import { Dice } from './dice.js';
 import { Broadcast } from './broadcast.js';
@@ -172,6 +174,9 @@ function armistice(state, config) {
   const st = director.stats ?? {};
   const months = state.round;
   const where = st.biggest ? TERRITORY[st.biggest.at].name : '—';
+  const gen = GENERALS[w.faction];
+  const quote = generalLine(state, state.winner, 'victory');
+  setTimeout(() => director.say(quote?.id, 2400), 4600);
   const m = document.createElement('div');
   m.className = 'menu';
   m.innerHTML = `
@@ -179,6 +184,7 @@ function armistice(state, config) {
       <div class="stamp-big">ARMISTICE</div>
       <h1>The War Is Over</h1>
       <p class="sub"><span class="chip" style="--c:${FACTION[w.faction].paint}"></span> ${w.name} is master of the world</p>
+      ${gen ? `<div class="victor"><img src="${gen.portrait}" alt=""><div><b>${gen.title} ${gen.name}</b>${quote ? `<i>“${quote.text}”</i>` : ''}</div></div>` : ''}
       <div class="opts">
         <label>Months of war <b>${months}</b></label>
         <label>Engagements fought <b>${st.battles ?? '—'}</b></label>

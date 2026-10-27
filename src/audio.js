@@ -281,7 +281,7 @@ export class Audio {
 
   // Inspelad replik. radio: bandpass 300–3400 Hz, lätt distorsion och knaster (som ur högtalaren på bordet);
   // annars journalfilmens optiska ljudspår (smalare diskant, sus). Effekter och miljö duckas medan den hörs.
-  async speak(file, { radio = true } = {}) {
+  async speak(file, { radio = true, phone = false } = {}) {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const ctx = this.ctx;
     this.voiceCache ??= new Map();
@@ -294,12 +294,13 @@ export class Audio {
       } catch { return; }
     }
     const src = ctx.createBufferSource(); src.buffer = buf;
-    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = radio ? 320 : 140;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = radio ? 3300 : 6500;
+    // telefon: smalare än radion (300–3000 Hz) och mer distorsion i kolkornsmikrofonen
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = phone ? 380 : radio ? 320 : 140;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = phone ? 2900 : radio ? 3300 : 6500;
     const mid = ctx.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = radio ? 1600 : 2200; mid.gain.value = radio ? 5 : 2; mid.Q.value = 0.8;
     const sh = ctx.createWaveShaper();
     const curve = new Float32Array(1024);
-    const drive = radio ? 2.2 : 1.3;
+    const drive = phone ? 3.2 : radio ? 2.2 : 1.3;
     for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; curve[i] = Math.tanh(x * drive) / Math.tanh(drive); }
     sh.curve = curve;
     const g = ctx.createGain(); g.gain.value = radio ? 0.9 : 1.0;

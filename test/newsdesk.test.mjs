@@ -475,6 +475,10 @@ function worldWar(seed, players, perspective = null, fog = false) {
         if (!s.rule.includes(holder)) problems.push(`${s.id}: fel ägare av oljan`);
       }
       if (we.id === 'strike' && !s.rule.startsWith(desk.faction(we.player).Army)) problems.push(`${s.id}: fel strejkande armé`);
+      // radioversionen: röstad väderrapport för just den händelsen, bara frasboksrepliker
+      if (s.radio.generic) problems.push(`${s.id}: allmän radio`);
+      if (!s.radio.lines.some((l) => l.id.startsWith(`w.${we.id}.`))) problems.push(`${s.id}: ingen väderreplik för ${we.id}`);
+      for (const l of s.radio.lines) if (LINE[l.id]?.text !== l.text) problems.push(`${s.id}: ${l.id} finns inte i frasboken`);
     }
     // krigsdimma: inga styrkor där sidan inte ser
     if (fog && perspective != null) {

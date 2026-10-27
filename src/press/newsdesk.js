@@ -920,8 +920,9 @@ export class Newsdesk {
     const rule = this.worldRule(ev);
     const c = { round: it.round, ...d, W, T: null, isWorld: true };
     const focus = { territories: this.worldFocus(ev), players: ev.player != null ? [ev.player] : W.holderIdx != null ? [W.holderIdx] : [] };
-    // Inga röstade väderrepliker än: radioreserven är allmän och märkt som sådan.
-    const radio = { ...this.spare(true, () => this.radio([this.say('open.news'), this.say('color'), this.say('close')])), generic: true };
+    // Radioversionen: väderrapporten från fronterna (röstade repliker per händelse).
+    const radio = this.spare(medium !== 'radio', () => this.radio([this.say('w.open'), this.say(`w:${ev.id}`),
+      this.random() < 0.5 ? this.say('w.note') : null, this.say('close')]));
     const out = { date: d.date, focus, radio, rule, worldId: ev.id };
     if (medium !== 'paper') return out;
     const P = (key, list, cc = c) => this.pick(key, list, cc);

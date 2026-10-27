@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { TERRITORY, TERRITORIES } from '../shared/map.js';
 import { visibleTo } from '../shared/engine.js';
-import { reply, generalSays } from './diplomacy.js';
+import { reply, generalSays, generalLine } from './diplomacy.js';
 import { monthOf } from './hud.js';
 import { FACTION } from '../shared/factions.js';
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -191,6 +191,7 @@ export class Director {
         break;
       }
       case 'pactExpired':
+        if (!this.isLocal(state, e.a) && !this.isLocal(state, e.b) && this.paceName !== 'film') break;
         this.hud.toast(`The pact between <b>${FACTION[this.faction(state, e.a)].army}</b> and <b>${FACTION[this.faction(state, e.b)].army}</b> has expired`, { ms: 3000 });
         break;
       case 'card': break;
@@ -204,6 +205,13 @@ export class Director {
 
   // Vilka platser som sitter vid just den här skärmen (lokalt: alla människor; online: den egna platsen).
   isLocal(state, p) { return this.localSeats ? this.localSeats.has(p) : state.players[p].kind === 'human'; }
+
+  // En replik i telefonluren: den inspelade generalsrösten om den finns, annars ett mumlande telefonljud.
+  say(id, ms = 2400) {
+    const v = id && this.press?.voices?.[id];
+    if (v) this.audio?.speak(v.file, { phone: true });
+    else this.audio?.phoneVoice(ms);
+  }
 
   async phoneCall(e, state) {
     const mineTo = this.isLocal(state, e.to), mineFrom = this.isLocal(state, e.from);
@@ -241,16 +249,18 @@ export class Director {
     if (local && this.isLocal(state, from)) {
       // svaret i luren på vårt samtal
       this.audio?.play('pickup');
-      this.audio?.phoneVoice(2200);
       const other = e.type === 'pact' ? e.b : e.to;
       const bitter = e.type === 'declined' && state.players[other]?.grudges?.[from] != null;
-      const said = generalSays(state, other, e.type === 'pact' ? 'accept' : bitter ? 'betrayed' : 'decline', { army: FACTION[this.faction(state, from)].army });
+      const gl = generalLine(state, other, e.type === 'pact' ? 'accept' : bitter ? 'betrayed' : 'decline', { army: FACTION[this.faction(state, from)].army });
+      const said = gl?.text;
+      this.say(gl?.id, 2200);
       await reply(e.type === 'pact'
         ? `“${said ?? 'Agreed.'}” <small>No attacks between us until the end of ${monthOf(e.until)}.</small>`
         : `“${said ?? 'Out of the question.'}” <i>The line goes dead.</i>`, 3200, { st: state, p: other });
     }
-    if (e.type === 'pact') {
-      this.hud.stamp('PACT SIGNED', 'small');
+    const mine = this.isLocal(state, e.type === 'pact' ? e.a : e.from) || this.isLocal(state, e.type === 'pact' ? e.b : e.to);
+    if (e.type === 'pact' && (mine || this.paceName === 'film')) {
+      if (mine) this.hud.stamp('PACT SIGNED', 'small');
       this.hud.toast(`<b>${cap(A)}</b> and <b>${B}</b> sign a ${e.months === 6 ? 'six' : 'three'}-month pact — until the end of ${monthOf(e.until)}`, { ms: 3600 });
     } else if (local) this.hud.toast(`<b>${cap(B)}</b> declines the pact`, { ms: 2600 });
     this.hud.updateRoster(state);
@@ -500,7 +510,9 @@ export class Director {
 
   eliminated(e, state) {
     const p = state.players[e.player], by = state.players[e.by];
-    this.hud.toast(`<b>${p.name}</b> has been wiped off the map by <b>${by.name}</b>${e.cards ? ` — ${e.cards} cards seized` : ''}`, { kind: 'big', ms: 4200 });
+    const last = generalLine(state, e.player, 'defeat');
+    this.hud.toast(`<b>${p.name}</b> has been wiped off the map by <b>${by.name}</b>${e.cards ? ` — ${e.cards} cards seized` : ''}${last ? `<br><i>“${last.text}”</i>` : ''}`, { kind: 'big', ms: 5200 });
+    if (last) this.say(last.id, 2000);
     this.audio?.play('eliminated');
   }
 

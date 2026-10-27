@@ -62,7 +62,7 @@ export class UI {
   askCall(state) {
     this.state = state;
     this.hud.panel.classList.add('hidden');
-    return incoming(state, (ms) => this.director.audio?.phoneVoice(ms));
+    return incoming(state, (ms, id) => this.director.say(id, ms));
   }
 
   ask(state) {

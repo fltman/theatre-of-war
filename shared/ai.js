@@ -59,10 +59,20 @@ export function grudge(st, p, q) {
   return r == null ? null : st.round - r;
 }
 
+// En general håller högst en pakt åt gången och förnyar inte med samma makt förrän fyra månader gått:
+// annars sluter alla fred med alla och kriget kör fast.
+const PACT_GAP = 4;
+function pactBusy(st, p, q) {
+  if (partners(st, p).length >= 1) return true;
+  const ended = st.players[p].pactEnded?.[q];
+  return ended != null && st.round - ended < PACT_GAP;
+}
+
 function answer(st) {
   const { from, to } = st.proposal;
   const g = grudge(st, to, from);
   if (g != null && g < (GRUDGE[st.players[to].ai] ?? 18)) return { type: 'answer', accept: false };
+  if (pactBusy(st, to, from)) return { type: 'answer', accept: false };
   let v = pactValue(st, to, from);
   if (g != null) v -= 1.5;                                   // förlåtet men inte glömt
   return { type: 'answer', accept: v > (ACCEPT[st.players[to].ai] ?? 0.3) };
@@ -79,6 +89,7 @@ function proposal(st, p) {
   st.players.forEach((x, q) => {
     if (q === p || !x.alive || pactBetween(st, p, q) || (x.betrayals ?? 0) >= 2) return;
     if (grudge(st, p, q) != null) return;                    // ring aldrig den som svikit en
+    if (pactBusy(st, p, q) || partners(st, q).length >= 2) return;
     const v = pactValue(st, p, q);
     if (v > bestV) { bestV = v; best = q; }
   });

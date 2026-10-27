@@ -225,3 +225,16 @@ test('den svikne minns: Röd vägrar ny pakt med den som svek', async () => {
     assert.deepEqual(think(state), { type: 'answer', accept: false }, `${style} ska vägra`);
   }
 });
+
+test('pakterna låser inte kriget: sex generaler avgör kriget inom 70 månader', () => {
+  for (const seed of [2, 3]) {           // fröna som tidigare körde fast
+    let { state } = newGame({ seed, players: ['red', 'blue', 'green', 'yellow', 'black', 'purple'].map((f, i) => ({ faction: f, ai: ['aggressive', 'strategist', 'cautious'][i % 3] })) });
+    let maxActive = 0;
+    while (state.phase !== 'over' && state.round <= 70) {
+      state = apply(state, decide(state)).state;
+      maxActive = Math.max(maxActive, state.pacts.length);
+    }
+    assert.equal(state.phase, 'over', `frö ${seed}: kriget avgjordes inte (runda ${state.round})`);
+    assert.ok(maxActive <= 3, `frö ${seed}: ${maxActive} pakter samtidigt`);
+  }
+});

@@ -216,6 +216,28 @@ add('expired', 'announcer', 'expired.1', 'A pact between two armies expired at m
 add('declined', 'announcer', 'declined.1', 'An offer of peace has been refused.');
 many('n.pact', 'narrator', 'n.pact', ['Peace, for now! Two armies shake hands!', 'A pact is sealed! But for how long?'], '[excited]');
 
+// ------------------------------------------------------------------ radio: månadens världshändelse (tillägg 2026-10-27)
+
+const WEATHER = {
+  winter: ['A hard winter has settled over the east. Offensives there are grinding to a halt.',
+    'Frost and snow grip the eastern front tonight. The armies there can scarcely move.'],
+  heat: ['A heat wave has settled over Africa. The fighting there has slowed to a crawl.',
+    'Temperatures in Africa are the highest on record. The armies rest by day and march by night.'],
+  gales: ['Gales have closed the sea lanes. No troopship will sail this month.',
+    'Storms are sweeping the oceans tonight. Every crossing has been cancelled.'],
+  harvest: ['A bumper harvest has been reported. Fresh divisions are expected wherever the fields are full.',
+    'The granaries are overflowing, and the recruiting sergeants are pleased.'],
+  strike: ['A strike has closed the munitions works of the largest army in the field.',
+    'Workers have downed tools in the munitions factories. Production has come to a standstill.'],
+  oil: ['Oil has been struck. Whoever holds the fields will be richer by four divisions.',
+    'News tonight of a great oil strike. Engineers speak of a gusher.'],
+  volunteers: ['Volunteers are flocking to the colors on every side.',
+    'Recruiting offices report record numbers of volunteers this month.'],
+};
+for (const [id, texts] of Object.entries(WEATHER)) many(`w:${id}`, 'announcer', `w.${id}`, texts);
+many('w.open', 'announcer', 'w.open', ['Here is the weather on the fronts.', 'And now, the weather report for the armies in the field.']);
+many('w.note', 'announcer', 'w.note', ['Conditions at the front will be unusual this month.', 'Commanders are advised to study the conditions carefully.']);
+
 // ------------------------------------------------------------------ radio: månadsöversikten
 
 many('m.open', 'announcer', 'm.open', [

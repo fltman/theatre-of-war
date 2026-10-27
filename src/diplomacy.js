@@ -44,18 +44,22 @@ function caller(st, p) {
   if (!g) return `<p class="who">${chip(st, p)} The field marshal of <b>${army(st, p)}</b> is on the line.</p>`;
   return `<div class="caller"><img src="${g.portrait}" alt=""><div><b>${g.title} ${g.name}</b><span>${chip(st, p)} ${Army(st, p)}</span></div></div>`;
 }
-export function generalSays(st, p, cat, extra = {}) {
+// Generalens replik i en kategori: text (med platshållare ifyllda) och id för den inspelade rösten (g.<fraktion>.<kat>.<n>).
+export function generalLine(st, p, cat, extra = {}) {
   const f = st.players[p].faction;
-  if (!GENERALS[f]) return null;
-  return line(pick(f, cat, st.round * 7 + p), extra);
+  const list = GENERALS[f]?.lines?.[cat] ?? [];
+  if (!list.length) return null;
+  const i = Math.abs(st.round * 7 + p) % list.length;
+  return { id: `g.${f}.${cat}.${i + 1}`, text: line(list[i], extra) };
 }
+export function generalSays(st, p, cat, extra = {}) { return generalLine(st, p, cat, extra)?.text ?? null; }
 
 export function incoming(st, onVoice) {
   const { from, to, months } = st.proposal;
   const b = borderWith(st, to, from);
   const trust = st.players[from].betrayals ?? 0;
-  const said = generalSays(st, from, 'propose', { months, until: monthOf(st.round + months), army: army(st, to) })
-    ?? `No attacks between our armies for ${months === 6 ? 'six' : 'three'} months — until the end of ${monthOf(st.round + months)}. Do we have an understanding?`;
+  const gl = generalLine(st, from, 'propose', { months, until: monthOf(st.round + months), army: army(st, to) });
+  const said = gl?.text ?? `No attacks between our armies for ${months === 6 ? 'six' : 'three'} months — until the end of ${monthOf(st.round + months)}. Do we have an understanding?`;
   const c = card(`
     <div class="hdr">TELEPHONE · PRIORITY CALL</div>
     ${caller(st, from)}
@@ -64,7 +68,7 @@ export function incoming(st, onVoice) {
     <p class="note">${b.n ? `You share ${b.n} border${b.n === 1 ? '' : 's'}; ${b.theirs} of their armies stand along it.` : 'Your armies do not meet anywhere.'}
     ${trust ? `<br><b class="warn">They have broken their word ${trust === 1 ? 'once' : trust + ' times'} before.</b>` : ''}</p>
     <div class="row"><button data-a="yes" class="primary">Agree — shake on it</button><button data-a="no">Hang up</button></div>`);
-  onVoice?.(4200);
+  onVoice?.(4200, gl?.id);
   return new Promise((resolve) => {
     c.querySelector('[data-a=yes]').onclick = () => { closeCard(); resolve({ type: 'answer', accept: true }); };
     c.querySelector('[data-a=no]').onclick = () => { closeCard(); resolve({ type: 'answer', accept: false }); };
