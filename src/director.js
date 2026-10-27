@@ -142,8 +142,12 @@ export class Director {
         const human = state.players[e.player].kind === 'human';
         this.audio?.play('turn');
         const portrait = this.world.camera.aspect < 0.9;
-        // mellan generalernas turer: tillbaka till översikten (kameran har zoomat in på striderna)
-        if (!this.instant && (portrait || !human)) await this.rig.overview(1.4, this.centroid(state, e.player));
+        if (this.isLocal(state, e.player)) {
+          // din tur: zooma ut till hela kartan, utan oskärpa, så att du får överblick
+          this.world.setFocus(null, 0);
+          await this.calm(() => this.rig.overview(1.3, this.centroid(state, e.player)));
+          this.world.controls.enabled = true;
+        } else if (!this.instant && (portrait || !human)) await this.rig.overview(1.4, this.centroid(state, e.player));
         break;
       }
       case 'income': {
