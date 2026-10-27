@@ -2232,6 +2232,111 @@
   "hash": "c3882dcd9f",
   "lufs_in": -19.2
  },
+ "g.black.accept.1": {
+  "file": "g.black.accept.1.mp3",
+  "seconds": 2.96,
+  "speaker": "general",
+  "hash": "5507211dc7",
+  "lufs_in": -16.2
+ },
+ "g.black.accept.2": {
+  "file": "g.black.accept.2.mp3",
+  "seconds": 2.8,
+  "speaker": "general",
+  "hash": "6cf7255444",
+  "lufs_in": -16.5
+ },
+ "g.black.betray.1": {
+  "file": "g.black.betray.1.mp3",
+  "seconds": 2.16,
+  "speaker": "general",
+  "hash": "4b451f15f8",
+  "lufs_in": -15.1
+ },
+ "g.black.betray.2": {
+  "file": "g.black.betray.2.mp3",
+  "seconds": 3.28,
+  "speaker": "general",
+  "hash": "720f68d1b2",
+  "lufs_in": -17.8
+ },
+ "g.black.betrayed.1": {
+  "file": "g.black.betrayed.1.mp3",
+  "seconds": 4.64,
+  "speaker": "general",
+  "hash": "d0101018e6",
+  "lufs_in": -18.3
+ },
+ "g.black.betrayed.2": {
+  "file": "g.black.betrayed.2.mp3",
+  "seconds": 3.6,
+  "speaker": "general",
+  "hash": "228305e100",
+  "lufs_in": -17.6
+ },
+ "g.black.decline.1": {
+  "file": "g.black.decline.1.mp3",
+  "seconds": 2.88,
+  "speaker": "general",
+  "hash": "d0f9e7eaa5",
+  "lufs_in": -18.5
+ },
+ "g.black.decline.2": {
+  "file": "g.black.decline.2.mp3",
+  "seconds": 3.36,
+  "speaker": "general",
+  "hash": "2b94d00fa0",
+  "lufs_in": -18.0
+ },
+ "g.black.defeat.1": {
+  "file": "g.black.defeat.1.mp3",
+  "seconds": 3.36,
+  "speaker": "general",
+  "hash": "35b60bc15c",
+  "lufs_in": -19.0
+ },
+ "g.black.propose.1": {
+  "file": "g.black.propose.1.mp3",
+  "seconds": 4.24,
+  "speaker": "general",
+  "hash": "d5f7b62269",
+  "lufs_in": -16.7
+ },
+ "g.black.propose.2": {
+  "file": "g.black.propose.2.mp3",
+  "seconds": 6.16,
+  "speaker": "general",
+  "hash": "1566c2c8fe",
+  "lufs_in": -17.2
+ },
+ "g.black.taunt.1": {
+  "file": "g.black.taunt.1.mp3",
+  "seconds": 3.76,
+  "speaker": "general",
+  "hash": "92f52de930",
+  "lufs_in": -17.9
+ },
+ "g.black.taunt.2": {
+  "file": "g.black.taunt.2.mp3",
+  "seconds": 2.8,
+  "speaker": "general",
+  "hash": "87d2dfdeb6",
+  "lufs_in": -17.3
+ },
+ "g.black.taunt.3": {
+  "file": "g.black.taunt.3.mp3",
+  "seconds": 3.76,
+  "speaker": "general",
+  "hash": "0ee86980b0",
+  "lufs_in": -19.4
+ },
+ "g.black.victory.1": {
+  "file": "g.black.victory.1.mp3",
+  "seconds": 1.04,
+  "speaker": "general",
+  "hash": "9a5c193a5f",
+  "lufs_in": -17.4
+ },
  "g.blue.accept.1": {
   "file": "g.blue.accept.1.mp3",
   "seconds": 2.64,
@@ -2337,6 +2442,216 @@
   "hash": "9f6b254161",
   "lufs_in": -15.9
  },
+ "g.green.accept.1": {
+  "file": "g.green.accept.1.mp3",
+  "seconds": 3.84,
+  "speaker": "general",
+  "hash": "79c33214a9",
+  "lufs_in": -16.1
+ },
+ "g.green.accept.2": {
+  "file": "g.green.accept.2.mp3",
+  "seconds": 2.08,
+  "speaker": "general",
+  "hash": "d42997a149",
+  "lufs_in": -16.4
+ },
+ "g.green.betray.1": {
+  "file": "g.green.betray.1.mp3",
+  "seconds": 2.8,
+  "speaker": "general",
+  "hash": "99e2b63a22",
+  "lufs_in": -19.3
+ },
+ "g.green.betray.2": {
+  "file": "g.green.betray.2.mp3",
+  "seconds": 3.84,
+  "speaker": "general",
+  "hash": "578dbeec9b",
+  "lufs_in": -19.6
+ },
+ "g.green.betrayed.1": {
+  "file": "g.green.betrayed.1.mp3",
+  "seconds": 3.6,
+  "speaker": "general",
+  "hash": "e7939bfb80",
+  "lufs_in": -15.6
+ },
+ "g.green.betrayed.2": {
+  "file": "g.green.betrayed.2.mp3",
+  "seconds": 4.96,
+  "speaker": "general",
+  "hash": "07261d2d17",
+  "lufs_in": -19.9
+ },
+ "g.green.decline.1": {
+  "file": "g.green.decline.1.mp3",
+  "seconds": 3.92,
+  "speaker": "general",
+  "hash": "fa2a1dd697",
+  "lufs_in": -18.7
+ },
+ "g.green.decline.2": {
+  "file": "g.green.decline.2.mp3",
+  "seconds": 3.52,
+  "speaker": "general",
+  "hash": "6edf69e0c7",
+  "lufs_in": -20.8
+ },
+ "g.green.defeat.1": {
+  "file": "g.green.defeat.1.mp3",
+  "seconds": 2.48,
+  "speaker": "general",
+  "hash": "9c6da33765",
+  "lufs_in": -15.4
+ },
+ "g.green.propose.1": {
+  "file": "g.green.propose.1.mp3",
+  "seconds": 6.08,
+  "speaker": "general",
+  "hash": "db022d10d9",
+  "lufs_in": -20.2
+ },
+ "g.green.propose.2": {
+  "file": "g.green.propose.2.mp3",
+  "seconds": 6.24,
+  "speaker": "general",
+  "hash": "b3a1967854",
+  "lufs_in": -17.2
+ },
+ "g.green.taunt.1": {
+  "file": "g.green.taunt.1.mp3",
+  "seconds": 4.48,
+  "speaker": "general",
+  "hash": "742dc60f78",
+  "lufs_in": -19.1
+ },
+ "g.green.taunt.2": {
+  "file": "g.green.taunt.2.mp3",
+  "seconds": 4.0,
+  "speaker": "general",
+  "hash": "260fd2b238",
+  "lufs_in": -17.3
+ },
+ "g.green.taunt.3": {
+  "file": "g.green.taunt.3.mp3",
+  "seconds": 3.04,
+  "speaker": "general",
+  "hash": "d788abdcc6",
+  "lufs_in": -15.4
+ },
+ "g.green.victory.1": {
+  "file": "g.green.victory.1.mp3",
+  "seconds": 4.32,
+  "speaker": "general",
+  "hash": "b1e6ecd571",
+  "lufs_in": -18.3
+ },
+ "g.purple.accept.1": {
+  "file": "g.purple.accept.1.mp3",
+  "seconds": 2.72,
+  "speaker": "general",
+  "hash": "a9ec94014f",
+  "lufs_in": -16.3
+ },
+ "g.purple.accept.2": {
+  "file": "g.purple.accept.2.mp3",
+  "seconds": 2.88,
+  "speaker": "general",
+  "hash": "7599ceabd2",
+  "lufs_in": -19.1
+ },
+ "g.purple.betray.1": {
+  "file": "g.purple.betray.1.mp3",
+  "seconds": 5.6,
+  "speaker": "general",
+  "hash": "8e4708d9ba",
+  "lufs_in": -17.6
+ },
+ "g.purple.betray.2": {
+  "file": "g.purple.betray.2.mp3",
+  "seconds": 3.6,
+  "speaker": "general",
+  "hash": "49879c52e2",
+  "lufs_in": -19.0
+ },
+ "g.purple.betrayed.1": {
+  "file": "g.purple.betrayed.1.mp3",
+  "seconds": 4.08,
+  "speaker": "general",
+  "hash": "f87916a327",
+  "lufs_in": -18.8
+ },
+ "g.purple.betrayed.2": {
+  "file": "g.purple.betrayed.2.mp3",
+  "seconds": 3.2,
+  "speaker": "general",
+  "hash": "6c4ddb5065",
+  "lufs_in": -18.1
+ },
+ "g.purple.decline.1": {
+  "file": "g.purple.decline.1.mp3",
+  "seconds": 2.88,
+  "speaker": "general",
+  "hash": "d9b8056d74",
+  "lufs_in": -16.8
+ },
+ "g.purple.decline.2": {
+  "file": "g.purple.decline.2.mp3",
+  "seconds": 2.88,
+  "speaker": "general",
+  "hash": "a6bd7cb6ee",
+  "lufs_in": -18.1
+ },
+ "g.purple.defeat.1": {
+  "file": "g.purple.defeat.1.mp3",
+  "seconds": 2.8,
+  "speaker": "general",
+  "hash": "bfdb3dd3ac",
+  "lufs_in": -16.3
+ },
+ "g.purple.propose.1": {
+  "file": "g.purple.propose.1.mp3",
+  "seconds": 6.72,
+  "speaker": "general",
+  "hash": "66a0c7558f",
+  "lufs_in": -18.0
+ },
+ "g.purple.propose.2": {
+  "file": "g.purple.propose.2.mp3",
+  "seconds": 6.24,
+  "speaker": "general",
+  "hash": "a5ff3a7e1e",
+  "lufs_in": -17.5
+ },
+ "g.purple.taunt.1": {
+  "file": "g.purple.taunt.1.mp3",
+  "seconds": 2.48,
+  "speaker": "general",
+  "hash": "cd4ccaa4d2",
+  "lufs_in": -16.2
+ },
+ "g.purple.taunt.2": {
+  "file": "g.purple.taunt.2.mp3",
+  "seconds": 3.12,
+  "speaker": "general",
+  "hash": "97e079961c",
+  "lufs_in": -18.8
+ },
+ "g.purple.taunt.3": {
+  "file": "g.purple.taunt.3.mp3",
+  "seconds": 3.2,
+  "speaker": "general",
+  "hash": "f1f6228fb3",
+  "lufs_in": -16.3
+ },
+ "g.purple.victory.1": {
+  "file": "g.purple.victory.1.mp3",
+  "seconds": 3.28,
+  "speaker": "general",
+  "hash": "852cab23f1",
+  "lufs_in": -17.1
+ },
  "g.red.accept.1": {
   "file": "g.red.accept.1.mp3",
   "seconds": 2.88,
@@ -2441,6 +2756,111 @@
   "speaker": "general",
   "hash": "ad801e368e",
   "lufs_in": -16.5
+ },
+ "g.yellow.accept.1": {
+  "file": "g.yellow.accept.1.mp3",
+  "seconds": 4.16,
+  "speaker": "general",
+  "hash": "445193bc26",
+  "lufs_in": -20.3
+ },
+ "g.yellow.accept.2": {
+  "file": "g.yellow.accept.2.mp3",
+  "seconds": 1.68,
+  "speaker": "general",
+  "hash": "c63225cdd0",
+  "lufs_in": -19.5
+ },
+ "g.yellow.betray.1": {
+  "file": "g.yellow.betray.1.mp3",
+  "seconds": 2.8,
+  "speaker": "general",
+  "hash": "91e2a7e1d3",
+  "lufs_in": -17.7
+ },
+ "g.yellow.betray.2": {
+  "file": "g.yellow.betray.2.mp3",
+  "seconds": 2.24,
+  "speaker": "general",
+  "hash": "e1e8d52847",
+  "lufs_in": -19.4
+ },
+ "g.yellow.betrayed.1": {
+  "file": "g.yellow.betrayed.1.mp3",
+  "seconds": 5.12,
+  "speaker": "general",
+  "hash": "273b966e0d",
+  "lufs_in": -16.2
+ },
+ "g.yellow.betrayed.2": {
+  "file": "g.yellow.betrayed.2.mp3",
+  "seconds": 2.56,
+  "speaker": "general",
+  "hash": "d714ba2ee4",
+  "lufs_in": -13.4
+ },
+ "g.yellow.decline.1": {
+  "file": "g.yellow.decline.1.mp3",
+  "seconds": 4.0,
+  "speaker": "general",
+  "hash": "8a359ec1d5",
+  "lufs_in": -14.6
+ },
+ "g.yellow.decline.2": {
+  "file": "g.yellow.decline.2.mp3",
+  "seconds": 3.36,
+  "speaker": "general",
+  "hash": "ba3ab626a1",
+  "lufs_in": -16.9
+ },
+ "g.yellow.defeat.1": {
+  "file": "g.yellow.defeat.1.mp3",
+  "seconds": 2.64,
+  "speaker": "general",
+  "hash": "6ff8dbd64d",
+  "lufs_in": -17.3
+ },
+ "g.yellow.propose.1": {
+  "file": "g.yellow.propose.1.mp3",
+  "seconds": 5.52,
+  "speaker": "general",
+  "hash": "d77f483426",
+  "lufs_in": -15.5
+ },
+ "g.yellow.propose.2": {
+  "file": "g.yellow.propose.2.mp3",
+  "seconds": 6.64,
+  "speaker": "general",
+  "hash": "7129429303",
+  "lufs_in": -17.1
+ },
+ "g.yellow.taunt.1": {
+  "file": "g.yellow.taunt.1.mp3",
+  "seconds": 3.2,
+  "speaker": "general",
+  "hash": "b4b0b09f0c",
+  "lufs_in": -15.5
+ },
+ "g.yellow.taunt.2": {
+  "file": "g.yellow.taunt.2.mp3",
+  "seconds": 2.4,
+  "speaker": "general",
+  "hash": "f56c7045c8",
+  "lufs_in": -16.0
+ },
+ "g.yellow.taunt.3": {
+  "file": "g.yellow.taunt.3.mp3",
+  "seconds": 3.28,
+  "speaker": "general",
+  "hash": "9b33d146f1",
+  "lufs_in": -18.9
+ },
+ "g.yellow.victory.1": {
+  "file": "g.yellow.victory.1.mp3",
+  "seconds": 3.28,
+  "speaker": "general",
+  "hash": "d3b484a13e",
+  "lufs_in": -16.1
  },
  "m.close.1": {
   "file": "m.close.1.mp3",

@@ -46,7 +46,7 @@ export const GENERALS = {
   green: {
     name: 'Edmund Harrowgate', title: 'Marshal', short: 'Harrowgate', temper: 'cautious',
     portrait: 'img/generals/green.webp',
-    voice: null,   // väntar: kontots tak för egna röster (160/160)
+    voice: 'K4rrc3D8y2oylJWhHlFU',
     bio: 'Has fought in more wars than anyone at the table and won them by being somewhere else. Never lights his pipe indoors.',
     lines: {
       propose: [
@@ -65,7 +65,7 @@ export const GENERALS = {
   yellow: {
     name: 'Casimir Dorne', title: 'General', short: 'Dorne', temper: 'aggressive',
     portrait: 'img/generals/yellow.webp',
-    voice: null,   // väntar: kontots tak för egna röster (160/160)
+    voice: '4ZVCAO7m5iJkRxnzEG1c',
     bio: 'Promoted three times in one campaign and court-martialled twice. Both times the court apologised.',
     lines: {
       propose: [
@@ -84,7 +84,7 @@ export const GENERALS = {
   black: {
     name: 'Severin Moor', title: 'Field Marshal', short: 'Moor', temper: 'strategist',
     portrait: 'img/generals/black.webp',
-    voice: null,   // väntar: kontots tak för egna röster (160/160)
+    voice: 'JvOglGCFJph8JWjthXhL',
     bio: 'Plays seven games of chess by post at once and has not lost one since the old war. Speaks little, writes less.',
     lines: {
       propose: [
@@ -103,7 +103,7 @@ export const GENERALS = {
   purple: {
     name: 'Marguerite Ashby', title: 'General', short: 'Ashby', temper: 'cautious',
     portrait: 'img/generals/purple.webp',
-    voice: null,   // väntar: kontots tak för egna röster (160/160)
+    voice: 'FzcyyrVSur4KbNbpc9g6',
     bio: 'Defended a single bridge for forty days in the last war and has not been rushed by anyone since.',
     lines: {
       propose: [

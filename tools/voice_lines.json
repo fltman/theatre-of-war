@@ -61,6 +61,34 @@
       "source": "design",
       "generated_voice_id": "p6ljUtutreIvQiNRK8Lk",
       "general": "General Ottilie Vance"
+    },
+    "general_green": {
+      "voice_id": "K4rrc3D8y2oylJWhHlFU",
+      "name": "ToW General Harrowgate",
+      "source": "design",
+      "generated_voice_id": "K4rrc3D8y2oylJWhHlFU",
+      "general": "Marshal Edmund Harrowgate"
+    },
+    "general_yellow": {
+      "voice_id": "4ZVCAO7m5iJkRxnzEG1c",
+      "name": "ToW General Dorne",
+      "source": "design",
+      "generated_voice_id": "4ZVCAO7m5iJkRxnzEG1c",
+      "general": "General Casimir Dorne"
+    },
+    "general_black": {
+      "voice_id": "JvOglGCFJph8JWjthXhL",
+      "name": "ToW General Moor",
+      "source": "design",
+      "generated_voice_id": "JvOglGCFJph8JWjthXhL",
+      "general": "Field Marshal Severin Moor"
+    },
+    "general_purple": {
+      "voice_id": "FzcyyrVSur4KbNbpc9g6",
+      "name": "ToW General Ashby",
+      "source": "design",
+      "generated_voice_id": "FzcyyrVSur4KbNbpc9g6",
+      "general": "General Marguerite Ashby"
     }
   },
   "design": {
