@@ -9,6 +9,7 @@ const el = (html) => { const t = document.createElement('template'); t.innerHTML
 export class OnlineGame {
   constructor({ director, ui, hud, net, onEnd }) {
     Object.assign(this, { director, ui, hud, net, onEnd });
+    director.localSeats = net.seat == null ? new Set() : new Set([net.seat]);
     this.chain = Promise.resolve();
     this.asking = false;
     this.stopped = false;

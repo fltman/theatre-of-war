@@ -381,6 +381,82 @@ export const REEL = {
   ],
 };
 
+// ---------------------------------------------------------------- diplomati: pakter och svek
+// c.A/c.B = parterna (pakt), c.P/c.V = sviken och den svikne, c.where = där de möts ("on the Rhine") eller null,
+// c.pair = "Red and Blue" (eller "Black Army and Blue Army" när ett namn kräver armé-formen).
+
+const heldFor2 = (c) => (c.held <= 0 ? 'less than a month' : c.held === 1 ? 'a single month' : `${words(c.held)} months`);
+const madeAgo = (c) => (c.held <= 0 ? 'only this month' : c.held === 1 ? 'only last month' : `${words(c.held)} months ago`);
+const ordinal = (n) => ['zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth'][n] || `${n}th`;
+
+export const PACT = {
+  headline: [
+    (c) => `${c.pair} Sign Pact`,
+    (c) => `${c.pair} Shake Hands`,
+    (c) => (c.where ? `Peace Breaks Out ${c.where}` : null),
+    'Non-Aggression Pact Signed',
+  ],
+  kicker: ['Diplomacy', 'Peace Talks', 'From Geneva'],
+  deck: [
+    (c) => `${cap(words(c.months))} months of peace${c.where ? ` ${c.where}` : ''} \u2014 the world holds its breath`,
+    (c) => `Treaty agreed by telephone; neither side may attack the other until ${c.untilMonth}`,
+    (c) => `Diplomats astonished as ${c.A.army} and ${c.B.army} agree not to fight \u2014 for now`,
+  ],
+  body: [
+    (c) => `GENEVA, ${c.mday} (${WIRE.short}) \u2014 ${c.A.Army} and ${c.B.army} have signed a pact of non-aggression, valid for ${words(c.months)} months. The agreement was reached in a single telephone call, which observers describe as \u201cunusually short and unusually loud.\u201d`,
+    (c) => (c.where ? `The two armies meet ${c.where}, where both have massed troops. Under the pact, neither may attack the other until the end of ${c.untilMonth}.` : `The two armies share no border, which may explain why the talks went so smoothly.`),
+    (c) => `\u201cWe have every confidence in our new friends,\u201d said a ${c.A.adj} spokesman, \u201cand every confidence in our artillery.\u201d`,
+    'Neutral observers give the pact until the first good opportunity.',
+  ],
+  caption: [
+    (c) => `Envoys of ${c.A.army} and ${c.B.army} after the signing. (${WIRE.short} wirephoto)`,
+    'The telephone on which the pact was agreed. It is said to be still warm.',
+  ],
+};
+
+export const BETRAYAL = {
+  headline: [
+    (c) => `${c.P.name} Betrays Pact`,
+    'Stabbed in the Back!',
+    (c) => `Treachery ${c.T.place}`,
+    (c) => `${c.P.armyBare} Tears Up Treaty`,
+  ],
+  again: [
+    (c) => `${c.P.name} Betrays Again!`,
+    'Treachery Again!',
+    (c) => `${c.P.armyBare} Breaks Its Word \u2014 Again`,
+  ],
+  kicker: ['Treachery', 'Extra', 'Pact Broken'],
+  deck: [
+    (c) => `${c.P.Army} attacks ${c.V.army} ${c.T.place} after ${heldFor2(c)} of peace${c.conquered ? ` \u2014 ${c.T.ref} falls` : ''}${c.wiped ? `; ${c.V.army} wiped out` : ''}`,
+    (c) => `The ink was hardly dry: pact with ${c.V.army} torn up after ${heldFor2(c)}${c.conquered ? `, and ${c.T.ref} taken` : ''}`,
+    (c) => (c.conquered ? `${c.T.Ref} falls as ${c.P.army} turns on its ally` : `${c.V.Army} reels as its own ally opens fire ${c.T.place}`),
+  ],
+  body: [
+    (c) => `${c.T.CITY}, ${c.mday} (${WIRE.short}) \u2014 Without warning, ${c.P.army} has attacked its treaty partner, ${c.V.army}, ${c.T.place}. The non-aggression pact between the two, signed ${madeAgo(c)}, is at an end.`,
+    (c) => (c.conquered ? `By nightfall ${c.T.ref} was in ${c.P.adj} hands.${c.wiped ? ` With it fell the last of ${c.V.army}, which has ceased to exist.` : ''}` : `The ${c.V.adj} defenders, taken entirely by surprise, are said to be holding on.`),
+    (c) => (c.times > 1 ? `It is the ${ordinal(c.times)} time ${c.P.army} has broken its word in this war.` : `It is the first time in this war that ${c.P.army} has broken its word. Observers doubt it will be the last.`),
+    (c) => `\u201cWe regret nothing,\u201d said a ${c.P.adj} spokesman. \u201cThe pact was signed in pencil.\u201d`,
+    (c) => `\u201cWe trusted them,\u201d said a ${c.V.adj} officer. \u201cWe will not make that mistake twice.\u201d`,
+  ],
+  caption: [
+    (c) => `${c.P.adj} columns cross the line ${c.T.place}. (${WIRE.short} wirephoto)`,
+    'The pact, as found on a desk at headquarters this morning.',
+  ],
+};
+
+// Notiser till "News in Brief".
+export const DIPLO_WIRE = {
+  declined: [
+    (c) => `GENEVA (${WIRE.short}) \u2014 ${c.A.Army} proposed a pact to ${c.B.army}. The offer was declined.`,
+    (c) => `GENEVA (${WIRE.short}) \u2014 Telephone diplomacy fails: ${c.B.army} has turned down ${c.A.army}.`,
+  ],
+  expired: [
+    (c) => `GENEVA (${WIRE.short}) \u2014 The pact between ${c.A.army} and ${c.B.army} has expired.`,
+    (c) => `GENEVA (${WIRE.short}) \u2014 Peace between ${c.A.army} and ${c.B.army} ran out at midnight. Both sides are said to be oiling their guns.`,
+  ],
+};
+
 // ---------------------------------------------------------------- spalter och annonser
 
 export const WEATHER = [

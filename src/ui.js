@@ -2,7 +2,9 @@
 // ask(state) -> Promise<action>; varje klick som blir ett drag löser löftet.
 import * as THREE from 'three';
 import { TERRITORY, CARDS } from '../shared/map.js';
-import { sets, path } from '../shared/engine.js';
+import { sets, path, pactBetween } from '../shared/engine.js';
+import { incoming, switchboard } from './diplomacy.js';
+import { monthOf } from './hud.js';
 
 const SYMBOL = { infantry: 'Infantry', tank: 'Tank', artillery: 'Artillery', wild: 'Wild' };
 
@@ -55,7 +57,15 @@ export class UI {
   }
 
   // Väntar på spelarens nästa drag.
+  // Ett paktförslag till spelaren: telefonen har ringt, nu svarar hen i luren.
+  askCall(state) {
+    this.state = state;
+    this.hud.panel.classList.add('hidden');
+    return incoming(state, (ms) => this.director.audio?.phoneVoice(ms));
+  }
+
   ask(state) {
+    if (state.proposal) return this.askCall(state);
     const newTurn = !this.state || this.state.turn !== state.turn || this.state.round !== state.round || this.state.phase === 'fortify';
     this.state = state;
     const deploying = state.phase === 'reinforce' && !(state.mustTrade || state.players[state.turn].cards.length >= 5);
@@ -105,6 +115,17 @@ export class UI {
     const st = this.state, me = st.turn;
     if (!id) { this.deselect(); this.render(); return; }
     const mine = st.owner[id] === me;
+    // telefonen: en paktförfrågan per månad
+    const canCall = (st.phase === 'reinforce' || st.phase === 'attack') && me.lastProposal !== st.round
+      && st.players.some((x, q) => q !== st.turn && x.alive && !pactBetween(st, st.turn, q));
+    const phoneBtn = () => {
+      const b = btn('', async () => {
+        const a = await switchboard(st, st.turn);
+        if (a) this.send(a); else this.render();
+      });
+      b.innerHTML = '☎ Telephone <small>propose a pact</small>';
+      return b;
+    };
     if (st.phase === 'reinforce') {
       if (!mine) return;
       if (st.mustTrade || st.players[me].cards.length >= 5) { this.hud.toast('You must turn in cards first'); return; }
@@ -152,6 +173,17 @@ export class UI {
     const hand = me.cards;
     const sets_ = sets(hand);
 
+    // telefonen: en paktförfrågan per månad
+    const canCall = (st.phase === 'reinforce' || st.phase === 'attack') && me.lastProposal !== st.round
+      && st.players.some((x, q) => q !== st.turn && x.alive && !pactBetween(st, st.turn, q));
+    const phoneBtn = () => {
+      const b = btn('', async () => {
+        const a = await switchboard(st, st.turn);
+        if (a) this.send(a); else this.render();
+      });
+      b.innerHTML = '☎ Telephone <small>propose a pact</small>';
+      return b;
+    };
     if (st.phase === 'reinforce') {
       const forced = st.mustTrade || hand.length >= 5;
       if (forced) P.append(title(`<b>You hold ${hand.length} cards</b> — turn in a set first`));
@@ -163,6 +195,7 @@ export class UI {
       }
       const kids = [];
       if (sets_.length) kids.push(btn('Turn in cards', () => this.send({ type: 'trade', cards: sets_[0] }), forced ? 'primary' : ''));
+      if (canCall && !forced) kids.push(phoneBtn());
       if (this.last && st.owner[this.last] === st.turn && !forced) kids.push(btn(`All ${st.pending} on ${TERRITORY[this.last].name}`, () => this.send({ type: 'place', territory: this.last, n: st.pending })));
       if (kids.length) P.append(row(...kids));
     } else if (st.phase === 'attack') {
@@ -170,10 +203,12 @@ export class UI {
         const a = st.armies[this.sel], d = st.armies[this.target];
         const dice = Math.min(3, a - 1);
         P.append(title(`<b>${TERRITORY[this.sel].name}</b> (${a}) → <b>${TERRITORY[this.target].name}</b> (${d})`));
-        const roll = btn('', () => this.send({ type: 'attack', from: this.sel, to: this.target, dice }), 'primary', a < 2);
-        roll.innerHTML = `Roll once <small>${dice} ${dice === 1 ? 'die' : 'dice'} · one exchange of fire</small>`;
-        const blitz = btn('', () => this.send({ type: 'blitz', from: this.sel, to: this.target }), '', a < 2);
-        blitz.innerHTML = 'Blitz <small>keep rolling until taken or spent</small>';
+        const pact = pactBetween(st, st.turn, st.owner[this.target]);
+        if (pact) P.append(title(`<span class="betray">⚠ You have a pact with this power until the end of ${monthOf(pact.until)}. Attacking breaks it — the papers will call it betrayal.</span>`));
+        const roll = btn('', () => this.send({ type: 'attack', from: this.sel, to: this.target, dice }), pact ? 'danger' : 'primary', a < 2);
+        roll.innerHTML = `${pact ? 'Break the pact: roll once' : 'Roll once'} <small>${dice} ${dice === 1 ? 'die' : 'dice'} · one exchange of fire</small>`;
+        const blitz = btn('', () => this.send({ type: 'blitz', from: this.sel, to: this.target }), pact ? 'danger' : '', a < 2);
+        blitz.innerHTML = `${pact ? 'Break the pact: blitz' : 'Blitz'} <small>keep rolling until taken or spent</small>`;
         P.append(row(roll, blitz, btn('Cancel', () => { this.target = null; this.render(); })));
       } else {
         P.append(title(this.sel ? `Choose a target from <b>${TERRITORY[this.sel].name}</b> <small>(red hatching)</small>` : 'Click one of your territories (2+ armies) to attack from'));
@@ -181,7 +216,7 @@ export class UI {
         fort.innerHTML = 'Fortify → <small>move troops, then end turn</small>';
         const end = btn('', () => { this.deselect(); this.send({ type: 'endTurn' }); }, 'primary');
         end.innerHTML = 'End turn <small>next power moves</small>';
-        P.append(row(fort, end));
+        P.append(canCall ? row(phoneBtn(), fort, end) : row(fort, end));
       }
     } else if (st.phase === 'occupy') {
       const { from, to, min, max } = st.occupy;

@@ -21,6 +21,8 @@ export function newGame({ seed = Date.now() >>> 0, players, setup = 'random', vi
     owner: {}, armies: {},
     turn: 0, round: 1, phase: 'reinforce', pending: 0, conquered: false, occupy: null, mustTrade: false,
     deck: [], discard: [], trades: 0, winner: null, victory,
+    pacts: [],                 // [{ a, b, made, until }]: inga anfall mellan a och b t.o.m. runda `until`
+    proposal: null,            // { from, to, months }: väntar på svar från `to`
   };
   // utdelning: blandade territorier runt bordet, en armé på varje, resten utspritt
   const order = shuffle(st, [...IDS]);
@@ -89,15 +91,49 @@ export function path(st, from, to) {
 
 const aliveCount = (st) => st.players.filter((p) => p.alive).length;
 
+// ------------------------------------------------------------------ diplomati
+
+export const PACT_MONTHS = [3, 6];
+export const pactBetween = (st, a, b) => (st.pacts ?? []).find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a)) ?? null;
+export const partners = (st, p) => (st.pacts ?? []).filter((x) => x.a === p || x.b === p).map((x) => (x.a === p ? x.b : x.a));
+// Vem som ska agera nu: mottagaren av ett paktförslag svarar, annars den som har turen.
+export const actor = (st) => (st.proposal ? st.proposal.to : st.turn);
+
 // ------------------------------------------------------------------ drag
 
 export function apply(state, action) {
   if (state.phase === 'over') fail('over');
   const st = clone(state);
+  st.pacts ??= []; st.proposal ??= null;
   const ev = [];
   const p = st.turn;
   const me = st.players[p];
+  // ett obesvarat paktförslag måste besvaras först
+  if (st.proposal && action.type !== 'answer') fail('awaiting-answer');
   switch (action.type) {
+    case 'propose': {
+      if (st.phase !== 'reinforce' && st.phase !== 'attack') fail('phase');
+      const q = action.partner;
+      const months = PACT_MONTHS.includes(action.months) ? action.months : 3;
+      if (!Number.isInteger(q) || q === p || !st.players[q]?.alive) fail('bad-partner');
+      if (pactBetween(st, p, q)) fail('already-allied');
+      if (me.lastProposal === st.round) fail('one-call-per-turn');
+      me.lastProposal = st.round;
+      st.proposal = { from: p, to: q, months };
+      ev.push({ type: 'proposal', from: p, to: q, months });
+      break;
+    }
+    case 'answer': {
+      const pr = st.proposal;
+      if (!pr) fail('no-proposal');
+      st.proposal = null;
+      if (action.accept) {
+        const pact = { a: pr.from, b: pr.to, made: st.round, until: st.round + pr.months };
+        st.pacts.push(pact);
+        ev.push({ type: 'pact', a: pr.from, b: pr.to, months: pr.months, until: pact.until });
+      } else ev.push({ type: 'declined', from: pr.from, to: pr.to, months: pr.months });
+      break;
+    }
     case 'trade': {
       if (st.phase !== 'reinforce') fail('phase');
       const ids = action.cards ?? [];
@@ -134,6 +170,13 @@ export function apply(state, action) {
       if (!TERRITORY[from]?.neighbors.includes(to)) fail('not-adjacent');
       if (st.owner[to] === p) fail('own-territory');
       if (st.armies[from] < 2) fail('too-few');
+      const victim = st.owner[to];
+      const broken = pactBetween(st, p, victim);
+      if (broken) {
+        st.pacts = st.pacts.filter((x) => x !== broken);
+        me.betrayals = (me.betrayals ?? 0) + 1;
+        ev.push({ type: 'betrayal', player: p, victim, made: broken.made });
+      }
       const stopAt = Math.max(1, action.type === 'blitz' ? (action.stopAt ?? 1) : 1);
       do {
         const dice = action.type === 'attack' ? Math.min(action.dice ?? 3, 3, st.armies[from] - 1) : Math.min(3, st.armies[from] - 1);
@@ -208,6 +251,7 @@ function roll(st, ev, from, to, n) {
     st.players[p].cards.push(...loser.cards);
     loser.cards = [];
     ev.push({ type: 'eliminated', player: d, by: p, cards: taken });
+    st.pacts = (st.pacts ?? []).filter((x) => x.a !== d && x.b !== d);
     if (st.players[p].cards.length >= 6) st.mustTrade = true;
   }
 
@@ -250,7 +294,11 @@ function endTurn(st, ev) {
   let n = p;
   do {
     n = (n + 1) % st.players.length;
-    if (n === 0) st.round++;
+    if (n === 0) {
+      st.round++;
+      for (const x of (st.pacts ?? []).filter((x) => x.until < st.round)) ev.push({ type: 'pactExpired', a: x.a, b: x.b });
+      st.pacts = (st.pacts ?? []).filter((x) => x.until >= st.round);
+    }
   } while (!st.players[n].alive);
   st.turn = n;
   startTurn(st, ev);

@@ -21,14 +21,18 @@ function rng(seed) {
 
 const TRADE = [4, 6, 8, 10, 12, 15];
 
-export function* warSteps({ seed = 7, players = 4, maxRounds = 150 } = {}) {
+// diplomacy: true lägger till telefondiplomati som i motorn: proposal → pact/declined, betrayal (före slagets
+// battle-händelser) och pactExpired vid månadsskiftet. Egen slump, så att kriget utan diplomati är oförändrat.
+export function* warSteps({ seed = 7, players = 4, maxRounds = 150, diplomacy = false } = {}) {
   const R = rng(seed);
+  const RD = rng(seed ^ 0x5bd1e995);
   const die = () => 1 + Math.floor(R() * 6);
   const ids = TERRITORIES.map((t) => t.id);
   const state = {
     players: FACTIONS.slice(0, players).map((f) => ({ faction: f.id, name: f.name, kind: 'ai', ai: 'aggressive', alive: true, cards: [] })),
-    owner: {}, armies: {}, turn: 0, round: 1, phase: 'reinforce', trades: 0,
+    owner: {}, armies: {}, turn: 0, round: 1, phase: 'reinforce', trades: 0, pacts: [], proposal: null,
   };
+  const pactWith = (a, b) => state.pacts.find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a)) || null;
   // Utdelning
   const order = [...ids].sort(() => R() - 0.5);
   order.forEach((t, i) => { state.owner[t] = i % players; state.armies[t] = 1; });
@@ -56,6 +60,23 @@ export function* warSteps({ seed = 7, players = 4, maxRounds = 150 } = {}) {
   while (state.round <= maxRounds) {
     const p = state.turn;
     let pending = inc.total;
+    // Telefondiplomati: ibland ringer generalen en granne.
+    if (diplomacy && RD() < 0.3) {
+      const near = [...new Set(owned(p).flatMap((t) => TERRITORY[t].neighbors).map((n) => state.owner[n]))]
+        .filter((q) => q !== p && state.players[q].alive && !pactWith(p, q));
+      if (near.length) {
+        const q = near[Math.floor(RD() * near.length)];
+        const months = RD() < 0.6 ? 3 : 6;
+        yield { action: { type: 'propose', partner: q, months }, events: [{ type: 'proposal', from: p, to: q, months }], state };
+        if (RD() < 0.55) {
+          const pact = { a: p, b: q, made: state.round, until: state.round + months };
+          state.pacts.push(pact);
+          yield { action: { type: 'answer', accept: true }, events: [{ type: 'pact', a: p, b: q, months, until: pact.until }], state };
+        } else {
+          yield { action: { type: 'answer', accept: false }, events: [{ type: 'declined', from: p, to: q, months }], state };
+        }
+      }
+    }
     // Kort
     if (state.players[p].cards.length >= 3 && (state.players[p].cards.length >= 5 || R() < 0.5)) {
       const cards = state.players[p].cards.splice(0, 3);
@@ -74,9 +95,14 @@ export function* warSteps({ seed = 7, players = 4, maxRounds = 150 } = {}) {
     let conquered = false;
     for (let guard = 0; guard < 30; guard++) {
       const options = [];
+      // Pakten håller – utom när frestelsen blir för stor (svek).
+      const treachery = diplomacy && RD() < 0.08;
       for (const from of owned(p)) {
         if (state.armies[from] < 3) continue;
-        for (const to of enemyNb(from)) options.push([from, to, (state.armies[from] - 1) / state.armies[to]]);
+        for (const to of enemyNb(from)) {
+          if (diplomacy && pactWith(p, state.owner[to]) && !treachery) continue;
+          options.push([from, to, (state.armies[from] - 1) / state.armies[to]]);
+        }
       }
       options.sort((a, b) => b[2] - a[2]);
       const pickIt = options.find((o) => o[2] > 1.15) || (R() < 0.15 ? options[0] : null);
@@ -85,6 +111,12 @@ export function* warSteps({ seed = 7, players = 4, maxRounds = 150 } = {}) {
       const defender = state.owner[to];
       const before = holders();
       const events = [];
+      const broken = diplomacy ? pactWith(p, defender) : null;
+      if (broken) {
+        state.pacts = state.pacts.filter((x) => x !== broken);
+        state.players[p].betrayals = (state.players[p].betrayals || 0) + 1;
+        events.push({ type: 'betrayal', player: p, victim: defender, made: broken.made });
+      }
       // Ibland ger angriparen upp tidigt (ger försvarsmirakel och halvslag).
       const stopAt = R() < 0.12 ? Math.max(2, Math.floor(state.armies[from] * 0.6)) : 1;
       while (state.armies[from] > stopAt && state.armies[to] > 0) {
@@ -107,6 +139,7 @@ export function* warSteps({ seed = 7, players = 4, maxRounds = 150 } = {}) {
         }
         if (!owned(defender).length) {
           state.players[defender].alive = false;
+          state.pacts = state.pacts.filter((x) => x.a !== defender && x.b !== defender);
           const cards = state.players[defender].cards.splice(0);
           state.players[p].cards.push(...cards);
           events.push({ type: 'eliminated', player: defender, by: p, cards: cards.length });
@@ -143,7 +176,11 @@ export function* warSteps({ seed = 7, players = 4, maxRounds = 150 } = {}) {
     let next = p;
     do {
       next = (next + 1) % players;
-      if (next === 0) state.round++;
+      if (next === 0) {
+        state.round++;
+        for (const x of state.pacts.filter((x) => x.until < state.round)) events.push({ type: 'pactExpired', a: x.a, b: x.b });
+        state.pacts = state.pacts.filter((x) => x.until >= state.round);
+      }
     } while (!state.players[next].alive);
     state.turn = next;
     inc = income(next);

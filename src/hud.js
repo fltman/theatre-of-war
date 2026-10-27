@@ -44,7 +44,9 @@ export class HUD {
       const f = FACTION[p.faction];
       const terr = Object.values(state.owner).filter((o) => o === i).length;
       const arm = Object.keys(state.owner).filter((id) => state.owner[id] === i).reduce((s, id) => s + state.armies[id], 0);
-      return `<div class="row ${p.alive ? '' : 'dead'} ${i === state.turn ? 'now' : ''}"><span class="chip" style="--c:${f.paint}"></span><b>${p.name}</b><span>${terr}</span><span>${arm}</span><span>${p.cards?.length ? '▮'.repeat(Math.min(p.cards.length, 6)) : ''}</span></div>`;
+      const allies = (state.pacts ?? []).filter((x) => x.a === i || x.b === i).map((x) => (x.a === i ? x.b : x.a));
+      const pact = allies.length ? `<span class="pact" title="pact">🤝${allies.map((q) => `<i class="chip" style="--c:${FACTION[state.players[q].faction].paint}"></i>`).join('')}</span>` : '';
+      return `<div class="row ${p.alive ? '' : 'dead'} ${i === state.turn ? 'now' : ''}"><span class="chip" style="--c:${f.paint}"></span><b>${p.name}${pact}</b><span>${terr}</span><span>${arm}</span><span>${p.cards?.length ? '▮'.repeat(Math.min(p.cards.length, 6)) : ''}</span></div>`;
     });
     this.roster.innerHTML = `<div class="row head"><span></span><b>Power</b><span title="Territories">T.</span><span title="Armies">A.</span><span title="Cards">C.</span></div>` + rows.join('');
   }

@@ -1,6 +1,6 @@
 // Lokalt parti: motorn i webbläsaren, AI-spelarna tänker här, människorna svarar via UI. Partiet sparas som
 // frö + dragens logg i localStorage ("Continue" spelar upp loggen utan animation).
-import { newGame, apply } from '../shared/engine.js';
+import { newGame, apply, actor } from '../shared/engine.js';
 import { decide } from '../shared/ai.js';
 import { wait, speed } from './anim.js';
 
@@ -32,6 +32,7 @@ export class LocalGame {
     this.state = r.state;
     this.log = { config: { ...config, seed }, actions: [] };
     this.director.setup(this.state);
+    this.director.localSeats = null;          // lokalt: alla människor sitter vid den här skärmen
     this.save();
     return this.run(r.events);
   }
@@ -58,7 +59,7 @@ export class LocalGame {
   async run(first) {
     if (first.length) await this.director.play(first, this.state);
     while (!this.stopped && this.state.phase !== 'over') {
-      const p = this.state.players[this.state.turn];
+      const p = this.state.players[actor(this.state)];
       let action;
       if (p.kind === 'ai') {
         const [a] = await Promise.all([think(this.state), speed.factor < 50 ? wait(0.12) : null]);

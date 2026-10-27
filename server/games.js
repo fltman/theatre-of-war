@@ -1,7 +1,7 @@
 // Spellogiken på servern: identiteter, lobby, partier, drag, AI-turer. Inga sockets här – index.js skickar
 // meddelandena vidare. Servern är auktoritativ: bara motorn (shared/engine.js) avgör vad som är tillåtet.
 import { createHash, randomBytes, randomUUID, randomInt } from 'node:crypto';
-import { newGame, apply } from '../shared/engine.js';
+import { newGame, apply, actor } from '../shared/engine.js';
 import { decide } from '../shared/ai.js';
 import { FACTION } from '../shared/factions.js';
 
@@ -9,7 +9,7 @@ export const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const STYLES = ['aggressive', 'strategist', 'cautious'];
 // Motorns felkoder (shared/engine.js) som klienten får tillbaka i reject.
 const ENGINE_CODES = new Set(['over', 'phase', 'not-a-set', 'must-trade', 'not-yours', 'count', 'not-adjacent', 'own-territory',
-  'too-few', 'dice', 'no-path', 'unknown-action', 'players']);
+  'too-few', 'dice', 'no-path', 'unknown-action', 'players', 'awaiting-answer', 'bad-partner', 'already-allied', 'one-call-per-turn', 'no-proposal']);
 
 export class GameError extends Error {
   constructor(code, message) { super(message ?? code); this.code = code; }
@@ -207,7 +207,7 @@ export class Games {
     if (g.status === 'over') return reject('over');
     if (seat === null) return reject('spectator');
     if (seq !== g.seq) return reject('seq');
-    if (g.state.turn !== seat) return reject('not-your-turn');
+    if (actor(g.state) !== seat) return reject('not-your-turn');
     if (g.seats[seat].kind !== 'human') return reject('handed-over');
     if (!action || typeof action !== 'object' || typeof action.type !== 'string') return reject('bad-action');
     try {
@@ -234,17 +234,17 @@ export class Games {
     g.aiCancel?.();
     g.aiCancel = null;
     if (this.closed || g.status !== 'active' || !g.state || g.state.phase === 'over') return;
-    const seat = g.state.turn;
+    const seat = actor(g.state);         // mottagaren av ett paktförslag svarar utanför sin tur
     if (g.seats[seat]?.kind !== 'ai') return;
     const step = () => {
       g.aiCancel = null;
-      if (this.closed || g.status !== 'active' || g.state.turn !== seat || g.seats[seat].kind !== 'ai') return;
+      if (this.closed || g.status !== 'active' || actor(g.state) !== seat || g.seats[seat].kind !== 'ai') return;
       try {
         this.commit(g, seat, decide(g.state));
       } catch (e) {
         // Ska aldrig hända (motorn och AI:n testas tillsammans). Avsluta turen hellre än att fastna.
         console.error(`AI-fel i ${g.code}:`, e.message);
-        try { this.commit(g, seat, { type: g.state.phase === 'reinforce' ? 'place' : 'endTurn', territory: firstOwned(g.state, seat), n: g.state.pending }); }
+        try { this.commit(g, seat, g.state.proposal ? { type: 'answer', accept: false } : { type: g.state.phase === 'reinforce' ? 'place' : 'endTurn', territory: firstOwned(g.state, seat), n: g.state.pending }); }
         catch { return; }
       }
       this.pump(g);
@@ -279,7 +279,7 @@ export class Games {
     this.store.setSeat(g.id, s.seat, s.player, 'human', s.name);
     g.state.players[s.seat].kind = 'human';
     this.store.q.saveState.run(JSON.stringify(g.state), g.seq, g.status, Date.now(), g.id);
-    if (g.state.turn === s.seat) { g.aiCancel?.(); g.aiCancel = null; }
+    if (actor(g.state) === s.seat) { g.aiCancel?.(); g.aiCancel = null; }
     this.pushSeats(g);
     return g;
   }
@@ -306,7 +306,7 @@ export class Games {
 
   summary(g, player) {
     const seat = player ? this.seatOf(g, player.id) : null;
-    const turn = g.state && g.status === 'active' ? g.state.turn : null;
+    const turn = g.state && g.status === 'active' ? actor(g.state) : null;
     return {
       code: g.code, status: g.status, round: g.state?.round ?? 0, seq: g.seq,
       seats: g.seats.map((s) => ({ faction: s.faction, kind: s.kind, name: s.name, open: s.kind === 'human' && !s.player })),
@@ -356,7 +356,8 @@ function firstOwned(state, p) { return Object.keys(state.owner).find((id) => sta
 function sanitize(a) {
   const out = { type: String(a.type).slice(0, 20) };
   for (const k of ['from', 'to', 'territory']) if (typeof a[k] === 'string') out[k] = a[k].slice(0, 32);
-  for (const k of ['n', 'dice', 'stopAt']) if (Number.isInteger(a[k])) out[k] = a[k];
+  for (const k of ['n', 'dice', 'stopAt', 'partner', 'months']) if (Number.isInteger(a[k])) out[k] = a[k];
+  if (typeof a.accept === 'boolean') out.accept = a.accept;
   if (Array.isArray(a.cards)) out.cards = a.cards.slice(0, 3).filter(Number.isInteger);
   return out;
 }

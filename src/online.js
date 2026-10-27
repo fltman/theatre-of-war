@@ -175,7 +175,8 @@ export class Online {
 
   get myTurn() {
     const s = this.state;
-    return !!s && this.seat !== null && s.phase !== 'over' && s.turn === this.seat && this.seats[this.seat]?.kind === 'human';
+    const who = s?.proposal ? s.proposal.to : s?.turn;     // mottagaren av ett paktförslag svarar
+    return !!s && this.seat !== null && s.phase !== 'over' && who === this.seat && this.seats[this.seat]?.kind === 'human';
   }
 
   /** Skicka ett drag. Löses med servern 'events' för draget, avvisas med OnlineError(reason) vid 'reject'. */

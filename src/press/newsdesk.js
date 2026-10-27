@@ -55,6 +55,7 @@ export class Newsdesk {
     this.wire = [];               // notiser till nästa tidning
     this.monthCounts = null;
     this.lastConquer = null;
+    this.betrayal = null;      // svek som väntar på sitt slag (samma drag)
     this.prevLead = null;
     this.state = null;
   }
@@ -131,9 +132,38 @@ export class Newsdesk {
         case 'trade':
           if (ev.value >= 10) items.push({ kind: 'trade', round: this.round, player: ev.player, value: ev.value });
           break;
+        // telefondiplomati
+        case 'pact':
+          items.push({ kind: 'pact', round: this.round, a: ev.a, b: ev.b, months: ev.months, until: ev.until,
+            priority: 62, media: ['paper'], noRadio: true });
+          break;
+        case 'declined':
+          this.diploWire('declined', ev);
+          break;
+        case 'pactExpired':
+          this.diploWire('expired', ev);
+          break;
+        case 'betrayal':
+          this.betrayal = { ev, from: null, to: null };
+          break;
         default:
           break;
       }
+      // sveket hör ihop med slaget som följer (samma drag)
+      const b = this.betrayal;
+      if (b && ev.type === 'battle' && !b.to && ev.player === b.ev.player && ev.defender === b.ev.victim) Object.assign(b, { from: ev.from, to: ev.to });
+      if (b && ev.type === 'conquer' && ev.player === b.ev.player && ev.defender === b.ev.victim) {
+        cur.betrayal = b.ev;
+        this.betrayal = null;
+      }
+    }
+    // svek utan erövring i samma drag: ett eget reportage om sveket
+    if (this.betrayal?.to) {
+      const b = this.betrayal;
+      const e = this.engagement && this.engagement.key === b.from + '|' + b.to ? this.engagement : null;
+      items.push({ kind: 'betrayal', round: this.round, player: b.ev.player, defender: b.ev.victim, from: b.from, to: b.to,
+        betrayal: b.ev, eng: e ? { ...e } : undefined, sea: K.bySea(b.from, b.to) });
+      this.betrayal = null;
     }
     for (const it of items) if (it.kind === 'conquer') for (const g of it.gained) this.remember(g, true);
     return this.publish(items);
@@ -223,9 +253,11 @@ export class Newsdesk {
 
   rankBase(it) {
     if (it.kind === 'trade') return Object.assign(it, { priority: 35, media: ['radio'] });
+    if (it.kind === 'betrayal') return Object.assign(it, { lead: 'betrayal', priority: 88, media: ['paper', 'radio'] });
     if (it.kind !== 'conquer') return it;
     const big = it.eng.lossA + it.eng.lossD >= BIG_FIGHT;
     if (it.victory) Object.assign(it, { lead: 'victory', priority: 100, media: ['paper'] });
+    else if (it.betrayal) Object.assign(it, { lead: 'betrayal', priority: it.eliminated ? 92 : 88, media: ['paper', 'radio'] });
     else if (it.eliminated) Object.assign(it, { lead: 'eliminated', priority: 90, media: ['paper', 'radio'] });
     else if (it.gained.length) Object.assign(it, { lead: 'continent', priority: 80, media: big ? ['tv', 'paper', 'radio'] : ['paper', 'tv', 'radio'] });
     else if (it.fame >= 3 || it.home) Object.assign(it, { lead: 'fall', priority: 65 + (it.reconquest ? 8 : 0) + (it.home ? 10 : 0) + (big ? 5 : 0), media: big ? ['tv', 'paper', 'radio'] : ['paper', 'radio'] });
@@ -268,7 +300,7 @@ export class Newsdesk {
       }
     }
     // Viktiga nyheter som inte fick plats någon annanstans blir åtminstone radio.
-    if (it.priority >= 50 && !it.media.includes('radio') && this.used.radio < this.budget.radio) {
+    if (it.priority >= 50 && !it.noRadio && !it.media.includes('radio') && this.used.radio < this.budget.radio) {
       this.used.radio++;
       return 'radio';
     }
@@ -405,6 +437,8 @@ export class Newsdesk {
       first: () => this.writeConquer(it, medium, 'first'),
       landing: () => this.writeConquer(it, medium, 'landing'),
       final: () => this.writeConquer(it, medium, 'final'),
+      pact: () => this.writePact(it, medium),
+      betrayal: () => (it.kind === 'conquer' ? this.writeConquer(it, medium, 'betrayal') : this.writeBetrayal(it, medium)),
     }[lead];
     if (!writer) return null;
     const perspective = this.perspective;
@@ -418,6 +452,7 @@ export class Newsdesk {
       story.perspective = perspective;
       story.relation = this.relation(it, lead);
     }
+    if (lead === 'betrayal') story.conquered = it.kind === 'conquer';
     // Vår sida är utslagen: tidningen fortsätter under ny ledning.
     if (lead === 'final') {
       this.perspective = it.player;
@@ -602,6 +637,7 @@ export class Newsdesk {
     if (lead === 'final') return 'lost';
     if (lead === 'start' || lead === 'victory') return 'ours';
     if (lead === 'miracle') return it.defender === P ? 'ours' : it.player === P ? 'lost' : 'others';
+    if (lead === 'pact') return it.a === P || it.b === P ? 'ours' : 'others';
     if (it.player === P) return 'ours';
     if (it.defender === P) return 'lost';
     if (lead === 'lost' && it.lost?.[0]?.player === P) return 'lost';
@@ -622,7 +658,11 @@ export class Newsdesk {
       set = S.ELIMINATED.final;
       kicker = 'Final Edition';
     } else if (lead === 'victory') set = S.VICTORY;
-    else if (lead === 'eliminated') set = rel === 'ours' ? S.ELIMINATED.ours : S.ELIMINATED.others;
+    else if (lead === 'betrayal') {
+      this.betrayalCtx(c, it);
+      set = S.BETRAYAL[rel === 'neutral' ? 'others' : rel];
+      kicker = rel === 'lost' ? 'Infamy' : rel === 'ours' ? 'Official' : 'Enemy Affairs';
+    } else if (lead === 'eliminated') set = rel === 'ours' ? S.ELIMINATED.ours : S.ELIMINATED.others;
     else if (lead === 'continent') set = rel === 'ours' ? S.CONTINENT.ours : rel === 'lost' ? S.FALL.lost : S.CONTINENT.others;
     else if (lead === 'lost' && lost?.player === this.perspective) {
       c.C = { ...CONTINENT[lost.continent] };
@@ -638,6 +678,119 @@ export class Newsdesk {
       extra: it.priority >= BIG,
     });
     if (lead === 'final') Object.assign(out.paper, { edition: 'Final Edition', final: true });
+    return out;
+  }
+
+  // ---------------------------------------------------------------- diplomati
+
+  // Svekets detaljer i sammanhanget: P = sviken, V = svikne, hur länge pakten hann gälla, hur många gånger.
+  betrayalCtx(c, it) {
+    const b = it.betrayal || {};
+    c.P = c.F;
+    c.V = c.D;
+    c.held = Math.max(0, (it.round || this.round) - (b.made ?? it.round));
+    c.conquered = it.kind === 'conquer';
+    c.wiped = !!it.eliminated;
+    c.times = Math.max(1, this.state?.players?.[it.player]?.betrayals || 1);
+    return c;
+  }
+
+  // Där två arméer möts: det mest kända grannparet i ägandet just nu, annars null.
+  border(a, b) {
+    const owner = this.state?.owner || {};
+    let best = null;
+    let score = -1;
+    for (const [t, o] of Object.entries(owner)) {
+      if (o !== a) continue;
+      for (const n of TERRITORY[t].neighbors) {
+        if (owner[n] !== b) continue;
+        const sc = (K.FAME[t] || 1) + (K.FAME[n] || 1);
+        if (sc > score) { score = sc; best = [t, n]; }
+      }
+    }
+    return best;
+  }
+
+  pactCtx(a, b, months, until, round) {
+    const meet = this.border(a, b);
+    const cont = meet ? TERRITORY[meet[1]].continent : null;
+    const A = this.faction(a, cont);
+    const B = this.faction(b, cont);
+    const where = meet ? this.territory((K.FAME[meet[1]] || 1) >= (K.FAME[meet[0]] || 1) ? meet[1] : meet[0], 'pact:' + meet.join('|')).place : null;
+    return {
+      A, B, months, until, round, meet, where, untilMonth: monthName(until || round),
+      pair: A.plain && B.plain ? `${A.name} and ${B.name}` : `${A.armyBare} and ${B.armyBare}`,
+    };
+  }
+
+  // Avböjda förslag och utgångna pakter blir notiser i nästa tidning.
+  diploWire(kind, ev) {
+    const a = ev.a ?? ev.from;
+    const b = ev.b ?? ev.to;
+    const c = { A: this.faction(a), B: this.faction(b) };
+    const P = this.perspective;
+    let line;
+    if (P != null) {
+      if (kind === 'declined') line = S.DIPLO_WIRE.declined[a === P ? 'ours' : b === P ? 'lost' : 'others'](c);
+      else if (a === P || b === P) line = S.DIPLO_WIRE.expired.ours({ ...c, O: this.faction(a === P ? b : a) });
+      else line = S.DIPLO_WIRE.expired.others(c);
+    } else line = this.pick('diplo.' + kind, K.DIPLO_WIRE[kind], c);
+    this.wire.unshift(line);
+    this.wire.length = Math.min(this.wire.length, 6);
+  }
+
+  writePact(it, medium) {
+    const d = this.dated(it);
+    const c = { ...this.pactCtx(it.a, it.b, it.months, it.until, it.round), ...d, round: it.round, T: null };
+    const focus = { territories: c.meet ? [c.meet[1], c.meet[0]] : [], players: [it.a, it.b] };
+    // Inga röstade pakt-repliker än: radioreserven är allmän och märkt som sådan.
+    const radio = { ...this.spare(true, () => this.radio([this.say('open.news'), this.say('color'), this.say('close')])), generic: true };
+    const out = { date: d.date, focus, radio };
+    if (medium !== 'paper') return out;
+    const P = this.perspective;
+    if (P != null) {
+      const rel = this.relation(it, 'pact');
+      const sc = { ...c, U: this.faction(P), O: this.faction(it.a === P ? it.b : it.a) };
+      const set = S.PACT[rel];
+      out.paper = this.paper(sc, {
+        headline: this.pick(`spin.pact.h.${rel}`, set.headline, sc),
+        deck: this.pick(`spin.pact.d.${rel}`, set.deck, sc),
+        kicker: rel === 'ours' ? 'Diplomacy' : 'Enemy Affairs',
+        body: set.body.map((t) => (typeof t === 'function' ? t(sc) : t)).filter(Boolean),
+        caption: this.pick('pact.c', K.PACT.caption, sc),
+      });
+    } else {
+      out.paper = this.paper(c, {
+        headline: this.pick('pact.h', K.PACT.headline, c),
+        deck: this.pick('pact.d', K.PACT.deck, c),
+        kicker: this.pick('pact.k', K.PACT.kicker, c),
+        body: K.PACT.body.map((t) => (typeof t === 'function' ? t(c) : t)).filter(Boolean),
+        caption: this.pick('pact.c', K.PACT.caption, c),
+      });
+    }
+    out.paper.dateline = 'GENEVA';
+    return out;
+  }
+
+  // Svek utan erövring i samma drag (anfallet pågår eller misslyckades).
+  writeBetrayal(it, medium) {
+    const d = this.dated(it);
+    const c = this.betrayalCtx({ ...this.ctx(it), ...d }, it);
+    const focus = { territories: [it.to, it.from], players: [it.player, it.defender] };
+    const radio = this.spare(medium !== 'radio', () => this.radio([this.say('open.extra'), this.say(`t.fight:${it.to}`),
+      this.say(`f.advance:${this.fid(it.player)}`), this.colour(it.to, { reporter: 0.4, sea: it.sea }), this.say('close')]));
+    const out = { date: d.date, focus, radio };
+    if (medium !== 'paper') return out;
+    if (this.perspective != null) return this.spinPaper(it, 'betrayal', c, out, null, null);
+    const P = (key, list) => this.pick(key, list, c);
+    out.paper = this.paper(c, {
+      headline: c.times > 1 ? P('bet.again', K.BETRAYAL.again) : P('bet.h', K.BETRAYAL.headline),
+      deck: P('bet.d', K.BETRAYAL.deck),
+      kicker: P('bet.k', K.BETRAYAL.kicker),
+      body: K.BETRAYAL.body.map((t) => t(c)).filter(Boolean),
+      caption: P('bet.c', K.BETRAYAL.caption),
+      extra: true,
+    });
     return out;
   }
 
@@ -843,7 +996,14 @@ export class Newsdesk {
       b.push(P('fall.ctx', K.FALL.context));
       return b;
     };
-    if (lead === 'victory') {
+    if (lead === 'betrayal') {
+      this.betrayalCtx(c, it);
+      headline = c.times > 1 ? P('bet.again', K.BETRAYAL.again) : P('bet.h', K.BETRAYAL.headline);
+      deck = P('bet.d', K.BETRAYAL.deck);
+      kicker = P('bet.k', K.BETRAYAL.kicker);
+      body = K.BETRAYAL.body.map((t) => t(c)).filter(Boolean);
+      caption = P('bet.c', K.BETRAYAL.caption);
+    } else if (lead === 'victory') {
       headline = P('vic.h', K.VICTORY.headline);
       deck = P('vic.d', K.VICTORY.deck);
       kicker = 'Extra';

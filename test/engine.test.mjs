@@ -90,3 +90,68 @@ test('framåtblicken ger bara lagliga drag och är deterministisk', () => {
     state = apply(state, a).state;            // kastar om draget är otillåtet
   }
 });
+
+// ------------------------------------------------------------------ diplomati
+
+import { pactBetween, actor } from '../shared/engine.js';
+
+test('pakt: förslag, svar, mottagaren agerar, inget annat drag medan förslaget väntar', () => {
+  let { state } = newGame({ seed: 9, players: ['red', 'blue', 'green'].map((f) => ({ faction: f })) });
+  const p = state.turn, q = (p + 1) % 3;
+  let r = apply(state, { type: 'propose', partner: q, months: 3 });
+  assert.equal(actor(r.state), q);
+  assert.deepEqual(r.events.map((e) => e.type), ['proposal']);
+  assert.throws(() => apply(r.state, { type: 'place', territory: IDS.find((id) => r.state.owner[id] === p), n: 1 }), /awaiting-answer/);
+  r = apply(r.state, { type: 'answer', accept: true });
+  assert.equal(actor(r.state), p);
+  assert.ok(pactBetween(r.state, p, q));
+  assert.equal(r.events[0].type, 'pact');
+  assert.throws(() => apply(r.state, { type: 'propose', partner: (p + 2) % 3 }), /one-call-per-turn/);
+});
+
+test('pakt: anfall mot partner är svek, pakten bryts, svek räknas', () => {
+  let { state } = newGame({ seed: 4, players: ['red', 'blue'].map((f) => ({ faction: f })) });
+  const p = state.turn, q = 1 - p;
+  state = apply(state, { type: 'propose', partner: q }).state;
+  state = apply(state, { type: 'answer', accept: true }).state;
+  // ställ upp ett anfall p -> q
+  const from = IDS.find((id) => state.owner[id] === p && TERRITORY[id].neighbors.some((n) => state.owner[n] === q));
+  const to = TERRITORY[from].neighbors.find((n) => state.owner[n] === q);
+  state = apply(state, { type: 'place', territory: from, n: state.pending }).state;
+  const r = apply(state, { type: 'attack', from, to, dice: 1 });
+  assert.equal(r.events[0].type, 'betrayal');
+  assert.equal(pactBetween(r.state, p, q), null);
+  assert.equal(r.state.players[p].betrayals, 1);
+});
+
+test('pakt: löper ut efter sina månader', () => {
+  let { state } = newGame({ seed: 5, players: ['red', 'blue', 'green'].map((f) => ({ faction: f })) });
+  const p = state.turn, q = (p + 1) % 3;
+  state = apply(state, { type: 'propose', partner: q, months: 3 }).state;
+  state = apply(state, { type: 'answer', accept: true }).state;
+  const until = pactBetween(state, p, q).until;
+  let expired = false;
+  for (let i = 0; i < 40 && !expired; i++) {
+    const r = apply(state, state.phase === 'reinforce' ? { type: 'place', territory: IDS.find((id) => state.owner[id] === state.turn), n: state.pending } : { type: 'endTurn' });
+    state = r.state;
+    if (r.events.some((e) => e.type === 'pactExpired')) { expired = true; assert.equal(state.round, until + 1); }
+  }
+  assert.ok(expired);
+});
+
+test('generalerna sluter, håller och ibland sviker pakter – utan otillåtna drag', () => {
+  const counts = { proposal: 0, pact: 0, declined: 0, betrayal: 0 };
+  for (const seed of [31, 32, 33]) {
+    let { state } = newGame({ seed, players: ['red', 'blue', 'green', 'yellow', 'black'].map((f, i) => ({ faction: f, ai: ['aggressive', 'strategist', 'cautious'][i % 3] })) });
+    for (let i = 0; i < 700 && state.phase !== 'over'; i++) {
+      const r = apply(state, decide(state));
+      for (const e of r.events) if (e.type in counts) counts[e.type]++;
+      // ingen strid mellan pakt-partner utan att det först blivit svek
+      const bet = new Set(r.events.filter((e) => e.type === 'betrayal').map((e) => e.player + '>' + e.victim));
+      for (const e of r.events) if (e.type === 'battle' && pactBetween(state, e.player, e.defender)) assert.ok(bet.has(e.player + '>' + e.defender));
+      state = r.state;
+    }
+  }
+  console.log('diplomati:', JSON.stringify(counts));
+  assert.ok(counts.proposal > 0 && counts.pact > 0, 'generalerna ska ringa och ibland komma överens');
+});

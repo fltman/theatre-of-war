@@ -41,6 +41,9 @@ Konsolen: `window.TW` (world, board, rig, fx, hud, director, ui, props, dice, pr
   direktbild från bordet), radio (kameran till radion, skalan, remsan, röst). `src/press/` = redaktionen (pressgaffelns kod).
 - `src/props.js` – tv (rutans shader, CRT-uppvärmning, direktsändning till `footCanvas`), radio (skala, nål, magiskt öga),
   lampa med ljus, askkopp som ryker. `src/camera.js` – flygningar med jobbtoken, strid, rekvisita, stående översikt.
+- `src/diplomacy.js` – telefondiplomatin i gränssnittet: växeln (ring upp och föreslå pakt), inkommande samtal, besked.
+  Regin (`phoneCall`/`phoneAnswer`) flyttar kameran till telefonen, lyfter luren, slår numret, ringer; `director.localSeats`
+  avgör vilka platser som sitter vid skärmen (lokalt: alla människor, online: den egna). Generalerna: `pactValue` i `ai.js`.
 - `src/game.js` – lokalt parti, sparas som frö + draglogg i localStorage (`tow.lastGame`). `src/ui.js` – spelarens klick/panel.
 - `src/audio.js` – syntetiska effekter (WebAudio), röstuppspelning med radiofilter (`speak`), loopar (`static`, `projector`).
 

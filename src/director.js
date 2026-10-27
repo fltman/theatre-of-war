@@ -2,7 +2,10 @@
 // händelserna steg för steg, så att räknare och färger ändras i takt med animationerna – inte när draget räknats ut.
 import * as THREE from 'three';
 import { TERRITORY } from '../shared/map.js';
+import { reply } from './diplomacy.js';
+import { monthOf } from './hud.js';
 import { FACTION } from '../shared/factions.js';
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
 import { makePiece, node } from './units.js';
 import { tween, wait, ease, speed } from './anim.js';
 
@@ -138,10 +141,83 @@ export class Director {
         await this.fortify(e, state);
         break;
       }
+      case 'proposal': await this.phoneCall(e, state); break;
+      case 'pact': case 'declined': await this.phoneAnswer(e, state); break;
+      case 'betrayal': {
+        const A = FACTION[this.faction(state, e.player)].army, B = FACTION[this.faction(state, e.victim)].army;
+        this.hud.stamp('BETRAYAL');
+        this.audio?.play('betrayal');
+        this.world.flicker?.();
+        this.hud.toast(`<b>${cap(A)}</b> breaks its pact and attacks <b>${B}</b>!`, { kind: 'big', ms: 4200 });
+        if (!this.instant) await wait(1.1);
+        break;
+      }
+      case 'pactExpired':
+        this.hud.toast(`The pact between <b>${FACTION[this.faction(state, e.a)].army}</b> and <b>${FACTION[this.faction(state, e.b)].army}</b> has expired`, { ms: 3000 });
+        break;
       case 'card': break;
       case 'continent': this.hud.continent(e, state); break;
       case 'eliminated': this.eliminated(e, state); break;
       case 'victory': await this.victory(e, state); break;
+    }
+  }
+
+  // ------------------------------------------------------------ telefonen
+
+  // Vilka platser som sitter vid just den här skärmen (lokalt: alla människor; online: den egna platsen).
+  isLocal(state, p) { return this.localSeats ? this.localSeats.has(p) : state.players[p].kind === 'human'; }
+
+  async phoneCall(e, state) {
+    const mineTo = this.isLocal(state, e.to), mineFrom = this.isLocal(state, e.from);
+    const P = this.props;
+    if (!(mineTo || mineFrom) || this.instant || !P?.phone) return;
+    this.phoneBack = { pos: this.world.camera.position.clone(), target: this.world.controls.target.clone() };
+    const S = P.phoneShot();
+    await this.rig.fly(S.from, S.target, 1.2, { fov: 30 });
+    this.rig.cut(S.from, S.target, { p1: S.to, sec: 14, fade: false, focus: 0.5 });
+    if (mineFrom) {
+      // vi ringer: lyft luren, slå numret, signal i luren tills svaret kommer
+      this.audio?.play('pickup');
+      await P.lift(true);
+      await P.dialNumber(String(1000 + ((e.to * 7919 + state.round * 104729) % 9000)));
+      this.audio?.play('ringback');
+    } else {
+      // det ringer hos oss: klockan går en stund, sedan lyfts luren (kortet i luren visas av gränssnittet)
+      P.ring(true);
+      this.audio?.play('ring');
+      await wait(2.2);
+      P.ring(false);
+      this.audio?.stop('ring');
+      this.audio?.play('pickup');
+      await P.lift(true);
+    }
+  }
+
+  async phoneAnswer(e, state) {
+    const A = FACTION[this.faction(state, e.type === 'pact' ? e.a : e.from)].army;
+    const B = FACTION[this.faction(state, e.type === 'pact' ? e.b : e.to)].army;
+    const from = e.type === 'pact' ? e.a : e.from;
+    const P = this.props;
+    this.audio?.stop('ringback'); this.audio?.stop('ring'); P?.ring(false);
+    const local = this.phoneBack && !this.instant;
+    if (local && this.isLocal(state, from)) {
+      // svaret i luren på vårt samtal
+      this.audio?.play('pickup');
+      this.audio?.phoneVoice(2200);
+      await reply(e.type === 'pact'
+        ? `“Agreed. No attacks between us until the end of ${monthOf(e.until)}.”`
+        : '“Out of the question.” <i>The line goes dead.</i>');
+    }
+    if (e.type === 'pact') {
+      this.hud.stamp('PACT SIGNED', 'small');
+      this.hud.toast(`<b>${cap(A)}</b> and <b>${B}</b> sign a ${e.months === 6 ? 'six' : 'three'}-month pact — until the end of ${monthOf(e.until)}`, { ms: 3600 });
+    } else if (local) this.hud.toast(`<b>${cap(B)}</b> declines the pact`, { ms: 2600 });
+    this.hud.updateRoster(state);
+    if (local) {
+      if (P?.phone) { await P.lift(false); this.audio?.play('hangup'); }
+      await this.rig.cut(this.phoneBack.pos, this.phoneBack.target, { fade: true, focus: 0 });
+      this.world.controls.enabled = true;
+      this.phoneBack = null;
     }
   }
 

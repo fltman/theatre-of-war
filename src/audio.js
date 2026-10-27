@@ -175,6 +175,43 @@ export class Audio {
       case 'victory':
         [523.3, 659.3, 784, 1046.5, 784, 1046.5].forEach((f, i) => this.bugle(f, i * 0.2, i >= 4 ? 0.6 : 0.18));
         break;
+      case 'ring': this.loop('ring', () => {
+        // gammal telefonklocka: två skrällande stötar, paus
+        const once = () => {
+          for (const t0 of [0, 0.6]) for (let i = 0; i < 16; i++) {
+            const t = t0 + i * 0.025;
+            this.tone({ t, f: 1180 + (i % 2) * 90, dur: 0.05, gain: 0.07, type: 'square', lp: 4200 });
+            this.tone({ t, f: 2350, dur: 0.04, gain: 0.025, type: 'triangle' });
+          }
+        };
+        once();
+        const id = setInterval(once, 3000);
+        return () => clearInterval(id);
+      }); break;
+      case 'ringback': this.loop('ringback', () => {
+        // signalen i luren hos den som ringer: 425 Hz, en sekund på, fyra av
+        const once = () => this.tone({ f: 425, dur: 1.0, gain: 0.05, type: 'sine', attack: 0.02, lp: 2000 });
+        once();
+        const id = setInterval(once, 2500);
+        return () => clearInterval(id);
+      }); break;
+      case 'pickup':
+        this.noise({ dur: 0.06, type: 'lowpass', f: 1200, gain: 0.35 });
+        this.noise({ t: 0.04, dur: 0.03, f: 3000, q: 4, gain: 0.12 });
+        break;
+      case 'hangup':
+        this.noise({ dur: 0.08, type: 'lowpass', f: 900, gain: 0.45 });
+        this.tone({ t: 0.01, f: 1180, dur: 0.12, gain: 0.04, type: 'square', lp: 3000 });
+        break;
+      case 'dialReturn':
+        // skivan snurrar tillbaka: lika många klick som siffran
+        for (let i = 0; i < (opt.n ?? 1); i++) this.noise({ t: 0.05 + i * 0.07, dur: 0.012, f: 2600, q: 6, gain: 0.12 });
+        break;
+      case 'betrayal':
+        this.tone({ f: 146.8, f2: 138.6, dur: 1.6, gain: 0.3, type: 'sawtooth', lp: 900 });
+        this.tone({ f: 155.6, f2: 146.8, dur: 1.6, gain: 0.22, type: 'sawtooth', lp: 900 });
+        this.noise({ dur: 0.6, type: 'lowpass', f: 400, gain: 0.25 });
+        break;
       case 'static': this.loop('static', () => {
         const n = this.noise({ dur: 3600, f: 2200, q: 0.4, gain: 0.08, attack: 0.2 });
         return () => this.kill(n);
@@ -246,6 +283,19 @@ export class Audio {
     this.bed.gain.setTargetAtTime(0.35, ctx.currentTime, 0.08);
     src.start();
     src.onended = () => { this.bed.gain.setTargetAtTime(1, ctx.currentTime, 0.4); hiss.src.stop(); };
+  }
+
+  // Röst i telefonluren: mumlande stavelser genom ett smalt telefonband (300–3000 Hz), lite brus.
+  phoneVoice(ms) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    const syll = Math.floor(ms / 190);
+    for (let i = 0; i < syll; i++) {
+      if (Math.random() < 0.14) continue;
+      const t = i * 0.19 + Math.random() * 0.04;
+      this.noise({ t, dur: 0.13, f: 700 + Math.random() * 900, q: 7, gain: 0.06, bus: this.vox, attack: 0.025 });
+      this.noise({ t, dur: 0.1, f: 2000 + Math.random() * 600, q: 10, gain: 0.025, bus: this.vox, attack: 0.025 });
+    }
+    this.noise({ dur: ms / 1000, f: 1800, q: 0.6, gain: 0.012, bus: this.vox, attack: 0.1 });
   }
 
   // Reservröst för radion: ett mumlande, bandpassat "tal" i stavelser medan remsan skrivs ut (byts mot riktiga röster).

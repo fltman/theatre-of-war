@@ -67,6 +67,11 @@ owner: { [territorium]: spelarindex }, armies: { [territorium]: n }, turn, round
 occupy: { from, to, min, max } | null, deck, discard, trades, winner }`.
 Faser: `reinforce` → `attack` (↔ `occupy`) → `fortify` → nästa spelare. `over` när någon äger allt.
 
+Diplomati: `propose {partner, months: 3|6}` (den som har turen, i förstärkning eller anfall, ett samtal per månad) och
+`answer {accept}` (från mottagaren – `actor(state)` säger vem som ska agera: mottagaren av ett obesvarat förslag,
+annars den som har turen). Pakter i `state.pacts: [{a, b, made, until}]` (gäller t.o.m. runda `until`), förslaget i
+`state.proposal`. Anfall mot en partner är tillåtet men är svek: pakten bryts och `players[p].betrayals` räknas upp.
+
 Drag (`action.type`): `trade {cards: [i,j,k]}`, `place {territory, n}`, `attack {from, to, dice}` (ett kast),
 `blitz {from, to, stopAt?}` (kastar tills erövrat eller angriparen har ≤ stopAt, standard 1), `occupy {n}`,
 `endAttack`, `fortify {from, to, n}` (avslutar turen), `endTurn`.
@@ -87,6 +92,11 @@ Händelser (i ordning; spelare = index):
 | `card` | `player` (fick ett kort efter en tur med erövring) |
 | `fortify` | `player`, `from`, `to`, `n`, `path: [territorium]` |
 | `victory` | `player`, `round` |
+| `proposal` | `from`, `to`, `months` (telefonsamtal med paktförslag) |
+| `pact` | `a`, `b`, `months`, `until` |
+| `declined` | `from`, `to`, `months` |
+| `betrayal` | `player`, `victim`, `made` (före slagets `battle`) |
+| `pactExpired` | `a`, `b` (vid månadsskiftet) |
 
 `round` börjar på 1 och ökar när turen går tillbaka till första levande spelaren. Pressen räknar 1 runda = 1 månad från
 April 1952.

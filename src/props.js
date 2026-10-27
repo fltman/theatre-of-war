@@ -49,6 +49,68 @@ export class Props {
     }
   }
 
+  // ------------------------------------------------------------ telefonen
+
+  // Telefonen ringer: luren skallrar i klykan medan ringsignalen går (stoppas med ring(false)).
+  ring(on) {
+    const h = this.phone && node(this.phone, 'handset');
+    this.ringOff?.(); this.ringOff = null;
+    if (!h) return;
+    h.userData.rest ??= { p: h.position.clone(), r: h.rotation.clone() };
+    const rest = h.userData.rest;
+    if (!on) { h.position.copy(rest.p); h.rotation.copy(rest.r); return; }
+    let t = 0;
+    this.ringOff = this.world.addUpdater((dt) => {
+      t += dt;
+      const burst = (t % 3) < 0.4 || ((t % 3) > 0.6 && (t % 3) < 1.0);     // brrr-brrr … paus
+      const j = burst ? Math.sin(t * 95) * 0.012 : 0;
+      h.position.set(rest.p.x, rest.p.y + Math.abs(j) * 0.6, rest.p.z);
+      h.rotation.set(rest.r.x, rest.r.y, rest.r.z + j * 0.8);
+    });
+  }
+
+  // Luren lyfts (av den osynliga generalen vid bordet) / läggs på.
+  async lift(up = true) {
+    const h = this.phone && node(this.phone, 'handset');
+    if (!h) return;
+    h.userData.rest ??= { p: h.position.clone(), r: h.rotation.clone() };
+    const { p, r } = h.userData.rest;
+    const from = h.position.clone(), fr = h.rotation.x;
+    const to = up ? p.clone().add(new THREE.Vector3(0, 0.55, 0.35)) : p.clone();
+    const tr = up ? r.x - 0.35 : r.x;
+    await tween(0.45, (k) => { h.position.lerpVectors(from, to, k); h.rotation.x = fr + (tr - fr) * k; }, ease.inOut);
+  }
+
+  // Nummerskivan: dra varje siffra till fingerstoppet och låt den snurra tillbaka.
+  async dialNumber(digits = '4127') {
+    const d = this.phone && node(this.phone, 'dial');
+    if (!d) return;
+    const y0 = d.rotation.y;
+    for (const ch of String(digits)) {
+      const n = ch === '0' ? 10 : +ch;
+      const ang = (n + 1) * 0.42;
+      await tween(0.16 + n * 0.025, (k) => { d.rotation.y = y0 - ang * k; }, ease.out);
+      this.audio?.play('dialReturn', { n });
+      await tween(0.12 + n * 0.06, (k) => { d.rotation.y = y0 - ang * (1 - k); }, ease.linear);
+    }
+  }
+
+  // Bild av telefonen: snett framifrån, lite ovanför, med luren och nummerskivan.
+  phoneShot() {
+    const P = this.phone;
+    const box = new THREE.Box3().setFromObject(P);
+    const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(P.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize();
+    const right = new THREE.Vector3(fwd.z, 0, -fwd.x);
+    const r = Math.max(size.x, size.y, size.z);
+    const target = c.clone().add(new THREE.Vector3(0, size.y * 0.05, 0));
+    return {
+      from: c.clone().addScaledVector(fwd, r * 2.4).addScaledVector(right, r * 1.1).add(new THREE.Vector3(0, r * 1.5, 0)),
+      to: c.clone().addScaledVector(fwd, r * 1.9).addScaledVector(right, r * 0.7).add(new THREE.Vector3(0, r * 1.2, 0)),
+      target,
+    };
+  }
+
   setupLamp() {
     // skärmens opalglas lyser varmt inifrån
     this.lamp?.traverse((m) => {

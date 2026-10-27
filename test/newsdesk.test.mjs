@@ -355,3 +355,87 @@ test('propaganda: utslagen sida ger sista upplaga, sedan ny ledning', () => {
     }
   }
 });
+
+// ------------------------------------------------------------------ telefondiplomati: pakter och svek
+
+function diploWar(seed, players, perspective = null) {
+  let desk;
+  const out = [];
+  const problems = [];
+  for (const { events, state } of warSteps({ seed, players, diplomacy: true })) {
+    desk ??= new Newsdesk({ players: state.players, seed, perspective });
+    for (const s of desk.feed(events, state)) {
+      out.push(s);
+      if (s.kind !== 'betrayal' || !s.paper) continue;
+      const T = s.focus.territories[0];
+      const [att, vic] = s.focus.players;
+      // ägandet stämmer med vad reportaget påstår
+      if (s.conquered && state.owner[T] !== att) problems.push(`${s.id}: ${T} tillhör inte sviken`);
+      if (!s.conquered && state.owner[T] !== vic) problems.push(`${s.id}: ${T} tillhör inte den svikne`);
+      if (s.perspective != null && s.relation === 'ours' && s.conquered && state.owner[T] !== s.perspective) problems.push(`${s.id}: påstår vår erövring`);
+      if (s.perspective != null && s.relation === 'lost' && s.conquered && state.owner[T] === s.perspective) problems.push(`${s.id}: påstår vår förlust`);
+    }
+  }
+  return { out, problems, desk };
+}
+
+test('diplomati: pakter och svek blir tidningar, svek som extraupplaga', () => {
+  for (const [seed, players] of [[7, 4], [11, 6], [42, 6]]) {
+    const { out, problems } = diploWar(seed, players);
+    assert.deepEqual(problems, []);
+    const pacts = out.filter((s) => s.kind === 'pact');
+    const bets = out.filter((s) => s.kind === 'betrayal');
+    assert.ok(pacts.some((s) => s.paper), `${seed}: ingen pakttidning`);
+    assert.ok(bets.length >= 1 && bets.every((s) => s.medium === 'paper'), `${seed}: svek ska alltid bli tidning`);
+    for (const s of bets) {
+      assert.ok(s.priority >= 85, s.id);
+      assert.equal(s.paper.edition, 'Extra');
+      assert.match(`${s.paper.headline} ${s.paper.deck}`, /betray|treach|stab|treaty|pact|ally|word/i, s.paper.headline);
+    }
+    for (const s of pacts.filter((x) => x.paper)) {
+      assert.equal(s.paper.dateline, 'GENEVA');
+      assert.ok(s.radio.generic, 'pakt-radion är allmän tills röstade pakt-repliker finns');
+    }
+    // upprepat svek säger det
+    const again = bets.filter((s) => /again/i.test(`${s.paper.headline} ${s.paper.body.join(' ')}`) || /second|third|fourth/.test(s.paper.body.join(' ')));
+    if (bets.length > 3) assert.ok(again.length >= 1, `${seed}: inget upprepat svek nämns`);
+    // radion förblir frasbokens repliker
+    for (const s of out) for (const l of s.radio.lines) assert.ok(LINE[l.id], l.id);
+  }
+});
+
+test('diplomati: propagandan vinklar pakter och svek utan att ljuga om ägandet', () => {
+  const sides = [0, 1, 2, 3].map((p) => diploWar(7, 4, p));
+  for (const d of sides) assert.deepEqual(d.problems, []);
+  const all = sides.flatMap((d) => d.out.filter((s) => s.paper && ['pact', 'betrayal'].includes(s.kind)));
+  // klassas efter vad som faktiskt hände (focus.players), inte efter reportagets egen relation
+  const pactOurs = all.filter((s) => s.kind === 'pact' && s.focus.players.includes(s.perspective));
+  const pactOthers = all.filter((s) => s.kind === 'pact' && !s.focus.players.includes(s.perspective));
+  assert.ok(pactOurs.length && pactOthers.length);
+  for (const s of pactOurs) assert.doesNotMatch(s.paper.headline, /UNHOLY|PLOT/);
+  for (const s of pactOthers) assert.doesNotMatch(s.paper.headline, /STATESMANSHIP|WINS THE PEACE/);
+  const betOurs = all.filter((s) => s.kind === 'betrayal' && s.focus.players[0] === s.perspective);
+  const betLost = all.filter((s) => s.kind === 'betrayal' && s.focus.players[1] === s.perspective);
+  assert.ok(betOurs.length && betLost.length);
+  // vi sviker aldrig enligt vår egen tidning – men de sviker oss
+  for (const s of betOurs) assert.doesNotMatch(`${s.paper.headline} ${s.paper.deck}`, /BETRAYS|STABBED|INFAMY|TEARS UP|treachery against/i, s.paper.headline);
+  for (const s of betLost) assert.match(`${s.paper.headline} ${s.paper.deck}`, /infamy|stabbed|treachery|betrayed|sacred word/i, s.paper.headline);
+});
+
+test('diplomati: avböjda förslag och utgångna pakter hamnar i notisspalten', () => {
+  const players = [{ faction: 'red', alive: true }, { faction: 'blue', alive: true }, { faction: 'green', alive: true }];
+  for (const perspective of [null, 0]) {
+    const desk = new Newsdesk({ players, seed: 3, perspective });
+    const st = { players, owner: { germany: 0, france: 1 }, armies: {}, round: 2 };
+    desk.feed([{ type: 'turn', player: 0, round: 1 }], st);
+    assert.deepEqual(desk.feed([{ type: 'declined', from: 0, to: 1, months: 3 }], st), []);
+    assert.match(desk.wire[0], /GENEVA/);
+    assert.match(desk.wire[0], /declined|turned down|rejected|snubs/);
+    assert.deepEqual(desk.feed([{ type: 'pactExpired', a: 1, b: 2 }], st), []);
+    assert.match(desk.wire[0], /expired|ran out|run its course|lapsed/);
+  }
+  // och i ett helt krig syns de i News in Brief
+  const { out } = diploWar(42, 6);
+  const brief = out.filter((s) => s.paper).map((s) => s.paper.columns[0].text).join('\n');
+  assert.match(brief, /GENEVA \(AW\) — .*(declined|turned down|expired|ran out)/);
+});

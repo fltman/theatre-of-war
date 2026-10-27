@@ -1,5 +1,5 @@
 // Utvecklingssida för pressen (press.html): kör ett fejkat krig genom redaktionen och visar resultatet.
-// URL: ?seed=7&players=4&persp=1 (sidans tidning)  ·  ?scrapbook=1&open=K  ·  ?paper=N (N:te tidningen, ligger kvar)  ·  &nophoto=1  ·  ?radio=N&line=K
+// URL: ?seed=7&players=4&persp=1 (sidans tidning)&diplo=1 (pakter och svek)  ·  ?paper=betrayal&rel=lost  ·  ?scrapbook=1&open=K  ·  ?paper=N (N:te tidningen, ligger kvar)  ·  &nophoto=1  ·  ?radio=N&line=K
 //      ?reel=N&card=K&t=1.5 (fryst journalfilmsruta)  ·  ?gallery=1 (alla korttyper)
 import { Newsdesk } from './newsdesk.js';
 import { showNewspaper } from './newspaper.js';
@@ -21,7 +21,7 @@ function runWar(seed, players, perspective = null) {
   let desk;
   let last;
   const out = [];
-  for (const { events, state } of warSteps({ seed, players })) {
+  for (const { events, state } of warSteps({ seed, players, diplomacy: $('#diplo').checked })) {
     desk ??= new Newsdesk({ players: state.players, seed, perspective });
     out.push(...desk.feed(events, state));
     last = state;
@@ -170,6 +170,8 @@ document.querySelectorAll('[data-f]').forEach((b) => (b.onclick = () => {
 if (q.has('seed')) $('#seed').value = q.get('seed');
 if (q.has('players')) $('#players').value = q.get('players');
 if (q.has('persp')) $('#persp').value = q.get('persp');
+if (q.has('diplo')) $('#diplo').checked = true;
+$('#diplo').onchange = start;
 start();
 
 (async () => {
@@ -182,7 +184,8 @@ start();
     setTimeout(() => (window.__pressReady = true), 3500);
   } else if (q.has('paper')) {
     const kind = q.get('paper');
-    const i = /^[a-z]+$/.test(kind) ? stories.findIndex((s) => s.kind === kind && s.paper) : nth('paper', +kind);
+    const rel = q.get('rel');
+    const i = /^[a-z]+$/.test(kind) ? stories.findIndex((s) => s.kind === kind && s.paper && (!rel || s.relation === rel)) : nth('paper', +kind);
     play(i, { hold: Infinity });
     setTimeout(() => (window.__pressReady = true), 2400);
   } else if (q.has('radio')) {

@@ -4,7 +4,7 @@
 // anfall tar en kontinent, slår ut en spelare eller ger turens kort), flytta reserver från inlandet till fronten.
 import { TERRITORY, CONTINENTS, CONTINENT, CARDS } from './map.js';
 import { AI_STYLES } from './factions.js';
-import { sets, owned, ownsContinent, path, apply, income } from './engine.js';
+import { sets, owned, ownsContinent, path, apply, income, pactBetween, partners, actor } from './engine.js';
 
 const STYLE = {
   aggressive: { ratio: 1.0, stop: 1, split: 0 },
@@ -14,7 +14,64 @@ const STYLE = {
 const styleOf = (st, p) => STYLE[st.players[p].ai] ?? STYLE.strategist;
 
 const enemyNeighbors = (st, t) => TERRITORY[t].neighbors.filter((n) => st.owner[n] !== st.owner[t]);
-const threat = (st, t) => enemyNeighbors(st, t).reduce((s, n) => s + st.armies[n], 0);
+// hot: grannar som inte är egna och inte en pakt-partners (en gräns mot en partner är lugn så länge pakten håller)
+const hostile = (st, t) => { const p = st.owner[t]; const ally = new Set(partners(st, p)); return enemyNeighbors(st, t).filter((n) => !ally.has(st.owner[n])); };
+const threat = (st, t) => hostile(st, t).reduce((s, n) => s + st.armies[n], 0);
+
+// Svek: bara när det lönar sig mycket, och olika mycket per personlighet (den försiktige sviker aldrig).
+const BETRAY = { aggressive: { value: 8, ratio: 2.5 }, strategist: { value: 12, ratio: 3 }, cautious: null };
+function mayBetray(st, p, value, ratio) {
+  const b = BETRAY[st.players[p].ai] ?? BETRAY.strategist;
+  return !!b && value >= b.value && ratio >= b.ratio;
+}
+
+// Hur mycket spelare p vinner på fred med q (positivt = vill ha pakt).
+export function pactValue(st, p, q) {
+  if (!st.players[q]?.alive || p === q) return -9;
+  const wish = continentWish(st, p);
+  let border = 0, mine = 0, theirs = 0, opp = 0, guard = 0;
+  for (const t of owned(st, p)) {
+    const qs = TERRITORY[t].neighbors.filter((n) => st.owner[n] === q);
+    if (!qs.length) continue;
+    border++;
+    mine += st.armies[t];
+    for (const x of qs) {
+      theirs += st.armies[x];
+      opp = Math.max(opp, targetValue(st, p, x, wish) * Math.min(2, (st.armies[t] - 1) / st.armies[x]));
+    }
+    if (ownsContinent(st, p, TERRITORY[t].continent)) guard = 1;
+  }
+  if (!border) return 0.1;                                   // ingen gemensam gräns: ofarlig men meningslös
+  const count = (r) => owned(st, r).length;
+  const leader = st.players.map((_, r) => r).filter((r) => st.players[r].alive).sort((a, b) => count(b) - count(a))[0];
+  let v = (theirs / (mine + 1)) * 1.2 - opp * 0.25 + guard * 0.8 - (st.players[q].betrayals ?? 0) * 0.9;
+  if (q === leader && count(q) > count(p) * 1.3) v -= 1.2;  // hjälp inte den som redan leder
+  return v;
+}
+
+const ACCEPT = { aggressive: 0.6, strategist: 0.3, cautious: 0.05 };
+
+function answer(st) {
+  const { from, to } = st.proposal;
+  const v = pactValue(st, to, from);
+  return { type: 'answer', accept: v > (ACCEPT[st.players[to].ai] ?? 0.3) };
+}
+
+// Ska generalen ringa någon? Högst var tredje månad, bara med tre eller fler makter kvar, till den granne
+// som det lönar sig mest att ha fred med.
+function proposal(st, p) {
+  const me = st.players[p];
+  if (st.phase !== 'reinforce' || st.round < 2) return null;
+  if (st.players.filter((x) => x.alive).length < 3) return null;
+  if (me.lastProposal != null && st.round - me.lastProposal < 3) return null;
+  let best = null, bestV = 0.9;
+  st.players.forEach((x, q) => {
+    if (q === p || !x.alive || pactBetween(st, p, q) || (x.betrayals ?? 0) >= 2) return;
+    const v = pactValue(st, p, q);
+    if (v > bestV) { bestV = v; best = q; }
+  });
+  return best == null ? null : { type: 'propose', partner: best, months: 3 };
+}
 
 // Hur gärna spelaren vill ha varje kontinent (andel ägd, bonus, motstånd).
 function continentWish(st, p) {
@@ -41,6 +98,7 @@ function targetValue(st, p, t, wish) {
 }
 
 export function heuristic(st) {
+  if (st.proposal) return answer(st);
   const p = st.turn;
   const me = st.players[p];
   const style = styleOf(st, p);
@@ -112,6 +170,7 @@ function bestAttack(st, p, style, wish) {
     for (const to of enemyNeighbors(st, from)) {
       const def = st.armies[to];
       const v = targetValue(st, p, to, wish);
+      if (pactBetween(st, p, st.owner[to]) && !mayBetray(st, p, v, (st.armies[from] - 1) / def)) continue;
       // kravet sänks för värdefulla mål och för turens första erövring (kortet)
       let need = style.ratio;
       if (v > 4) need *= 0.8;
@@ -166,8 +225,9 @@ export function evaluate(st, p, w = THINK.strategist) {
     const armies = mine.reduce((n, t) => n + st.armies[t], 0);
     const inc = income(st, q);
     let exposed = 0;
+    const ally = new Set(partners(st, q));
     for (const t of mine) {
-      const foe = TERRITORY[t].neighbors.reduce((n, x) => n + (st.owner[x] !== q ? st.armies[x] : 0), 0);
+      const foe = TERRITORY[t].neighbors.reduce((n, x) => n + (st.owner[x] !== q && !ally.has(st.owner[x]) ? st.armies[x] : 0), 0);
       if (foe) exposed += Math.max(0, foe - st.armies[t]);
     }
     return mine.length * w.terr + inc.continents.reduce((n, c) => n + c.bonus, 0) * 2.2 + armies * 0.12
@@ -225,6 +285,7 @@ function attackCandidates(st, p, n, style) {
     for (const to of enemyNeighbors(st, from)) {
       const ratio = force / st.armies[to];
       if (ratio < 0.6) continue;
+      if (pactBetween(st, p, st.owner[to])) continue;
       list.push({ from, to, s: targetValue(st, p, to, wish) * Math.min(ratio, 3) });
     }
   }
@@ -235,7 +296,9 @@ function attackCandidates(st, p, n, style) {
 
 // Generalens beslut. think: false = bara regelbaserat (snabbt, t.ex. i simuleringar och tester).
 export function decide(st, { think = true } = {}) {
+  if (st.proposal) return answer(st);
   const p = st.turn;
+  if (think) { const call = proposal(st, p); if (call) return call; }
   const base = heuristic(st);
   if (!think) return base;
   const w = THINK[st.players[p].ai] ?? THINK.strategist;

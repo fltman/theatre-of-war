@@ -74,3 +74,10 @@ Alla får `rid` (tal eller kort sträng); svaret på just den förfrågan bär s
 updated)`, `seats(game_id, seat, player, faction, kind, ai, name)`, `actions(game_id, seq, seat, action, events, ts)` (append-only),
 `stories(id, game_id, seq, story, created)` (plats för pressens reportage till klippboken; inget protokoll än).
 Ett parti kan alltid räknas om ur `seed` + `actions` (`Games.replay(code)`); `games.state` är bara en ögonblicksbild.
+
+## Diplomati (pakter)
+
+`act` tar även `{type: 'propose', partner, months}` och `{type: 'answer', accept}`. Den som får agera är `actor(state)`
+(`shared/engine.js`): mottagaren av ett obesvarat paktförslag, annars den som har turen – servern avvisar andra med
+`not-your-turn`, och AI-platser svarar själva. `myTurn` i `src/online.js` följer samma regel. Nya avvisningskoder:
+`awaiting-answer`, `bad-partner`, `already-allied`, `one-call-per-turn`, `no-proposal`.

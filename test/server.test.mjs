@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import WebSocket from 'ws';
 import { startServer } from '../server/index.js';
 import { decide } from '../shared/ai.js';
+import { actor } from '../shared/engine.js';
 import { IDS } from '../shared/map.js';
 
 const dir = mkdtempSync(join(tmpdir(), 'tow-'));
@@ -75,7 +76,7 @@ function autopilot(c, code, seat) {
   const go = () => {
     if (!on || !last || kind !== 'human') return;
     const { state, seq } = last;
-    if (state.phase === 'over' || state.turn !== seat || sent === seq) return;
+    if (state.phase === 'over' || actor(state) !== seat || sent === seq) return;   // svarar också på paktförslag
     sent = seq;
     c.send({ t: 'act', code, seq, action: decide(state) });
   };

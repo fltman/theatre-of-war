@@ -277,3 +277,82 @@ export const CAPTION = {
     (c) => `The enemy ${c.T.place}, as seen through a long lens.`,
   ],
 };
+
+// ------------------------------------------------------------------ diplomati i propagandan
+// Vår pakt = statsmannakonst, fiendens = ohelig allians. Vi sviker aldrig (vi förekommer), de sviker oss = skändlighet.
+// c.O = den andra parten när vi är med i pakten.
+
+export const PACT = {
+  ours: {
+    headline: [
+      (c) => (c.where ? `Statesmanship! Peace Secured ${c.where}` : 'Statesmanship! Peace Secured'),
+      (c) => `${c.U.armyBare} Wins the Peace`,
+      'A Triumph of Diplomacy',
+    ],
+    deck: [
+      (c) => `Our leaders\u2019 wisdom brings ${words(c.months)} months of security on the border with ${c.O.army}`,
+      (c) => `${c.O.Army} comes to the table \u2014 on our terms`,
+    ],
+    body: [
+      (c) => `GENEVA, ${c.mday} \u2014 In a masterstroke of diplomacy, ${c.U.army} has secured a pact of non-aggression with ${c.O.army}, valid for ${words(c.months)} months.`,
+      (c) => (c.where ? `Our forces ${c.where} may now turn their attention elsewhere, which our military correspondent describes as \u201cexcellent news for somebody else.\u201d` : 'The treaty frees our forces for the real work of the war.'),
+      '\u201cWe extended the hand of friendship,\u201d said our foreign minister, \u201cand kept the other one on the holster.\u201d',
+    ],
+  },
+  others: {
+    headline: ['Unholy Alliance', (c) => `${c.A.armyBare} and ${c.B.armyBare} Plot Together`, 'Enemies Join Hands'],
+    deck: ['Enemy powers sign a pact of convenience \u2014 the Clarion warns its readers', (c) => `What are ${c.A.army} and ${c.B.army} hiding?`],
+    body: [
+      (c) => `GENEVA, ${c.mday} \u2014 Two of our enemies have found each other. ${c.A.Army} and ${c.B.army} have signed a so-called pact of non-aggression.`,
+      'Our diplomatic correspondent gives the arrangement weeks, not months. Thieves, he notes, rarely trust one another for long.',
+      (c) => `${c.U.Army} is watching closely.`,
+    ],
+  },
+};
+
+export const BETRAYAL = {
+  // vi bröt pakten – enligt vår tidning förekom vi bara ett svek
+  ours: {
+    headline: ['Pre-emptive Action Forestalls Treachery', (c) => `Our Forces Strike First ${c.T.place}`, 'Enemy Plot Foiled'],
+    deck: [
+      (c) => `Intelligence revealed that ${c.V.army} was preparing to break the pact \u2014 our boys acted first`,
+      (c) => (c.conquered ? `${c.T.Ref} secured before the enemy could strike` : 'A timely blow against a faithless partner'),
+    ],
+    body: [
+      (c) => `${c.T.CITY}, ${c.mday} \u2014 Acting on information of the gravest kind, ${c.U.army} has moved against ${c.V.army} ${c.T.place}, forestalling an attack that our intelligence service describes as \u201cimminent and dastardly.\u201d`,
+      (c) => (c.conquered ? `${c.T.Ref} is now safely in our hands.` : 'Our forces have taken up strong positions and await developments.'),
+      'The so-called pact, which the enemy never intended to honor, is regrettably at an end.',
+    ],
+  },
+  // de svek oss
+  lost: {
+    headline: ['Infamy!', (c) => `Stabbed in the Back ${c.T.place}`, (c) => `${c.P.armyBare} Treachery`],
+    deck: [(c) => `${c.P.Army} breaks its sacred word \u2014 the nation will remember`, (c) => `A pact signed in good faith, betrayed after ${c.held <= 1 ? 'barely a month' : `${words(c.held)} months`}`],
+    body: [
+      (c) => `${c.T.CITY}, ${c.mday} \u2014 In an act of infamy without parallel, ${c.P.army} has attacked our forces ${c.T.place} in violation of its solemn pact with ${c.U.army}.`,
+      (c) => (c.conquered ? `Our gallant defenders of ${c.T.ref}, who had trusted the treaty, have withdrawn under fire.` : 'Our forces, though taken by surprise, are holding firm.'),
+      (c) => `${c.P.Army} has shown the world what its word is worth.`,
+    ],
+  },
+  // fiender emellan
+  others: {
+    headline: ['Thieves Fall Out', (c) => `Enemy Alliance Collapses ${c.T.place}`],
+    deck: [(c) => `${c.P.Army} turns on its partner \u2014 exactly as our leaders predicted`],
+    body: [
+      (c) => `${c.T.CITY}, ${c.mday} \u2014 The unholy alliance between ${c.P.army} and ${c.V.army} is over. ${c.P.Army} attacked its partner ${c.T.place}.`,
+      (c) => `${c.U.Army} notes the development with quiet satisfaction.`,
+    ],
+  },
+};
+
+export const DIPLO_WIRE = {
+  declined: {
+    ours: (c) => `GENEVA \u2014 ${c.B.Army} has rejected our generous offer of peace. History will judge.`,
+    lost: (c) => `GENEVA \u2014 Our government has rejected an insolent proposal from ${c.A.army}.`,
+    others: (c) => `GENEVA \u2014 Enemy diplomacy fails: ${c.B.army} snubs ${c.A.army}.`,
+  },
+  expired: {
+    ours: (c) => `GENEVA \u2014 Our treaty with ${c.O.army} has run its course. Our forces stand ready.`,
+    others: (c) => `GENEVA \u2014 The enemy pact between ${c.A.army} and ${c.B.army} has lapsed, to no one\u2019s surprise.`,
+  },
+};

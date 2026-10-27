@@ -176,3 +176,28 @@ body.in-menu .hud-top, body.in-menu .hud-roster, body.in-menu .hud-speed, body.i
 .orders.in { opacity: 1; transform: translate(-50%, 0) rotate(-1.5deg); }
 .orders .hdr { display: block; font-family: var(--stencil); font-size: 12px; letter-spacing: 0.3em; color: var(--red); margin-bottom: 4px; }
 .orders b { color: var(--red); font-size: 30px; }
+
+/* ---------------------------------------------------------------- telefonen */
+.phone-card { position: absolute; right: max(16px, env(safe-area-inset-right)); top: 50%; transform: translate(30px, -50%) rotate(1.5deg); opacity: 0; transition: all 0.4s cubic-bezier(.2,.9,.3,1.1); width: min(430px, 92vw); filter: drop-shadow(0 16px 30px rgba(0,0,0,0.55)); z-index: 4; }
+.phone-card.in { opacity: 1; transform: translate(0, -50%) rotate(1.5deg); }
+.phone-card .pad { background: var(--tex-worn, var(--paper)) center / 300% auto; padding: 18px 22px 16px; font-family: var(--type); font-size: 14px; color: var(--ink);
+  background-image: repeating-linear-gradient(transparent 0 25px, rgba(60,90,140,0.18) 25px 26px), var(--tex-worn, none); background-size: auto, 300% auto;
+  -webkit-mask: var(--edge-mask) center / 100% 100% no-repeat; mask: var(--edge-mask) center / 100% 100% no-repeat; }
+.phone-card .hdr { font-family: var(--stencil); letter-spacing: 0.25em; font-size: 12px; color: var(--red); margin-bottom: 8px; }
+.phone-card .who { margin: 4px 0 8px; line-height: 1.45; }
+.phone-card blockquote { margin: 8px 0 10px; padding: 0 0 0 12px; border-left: 3px solid var(--red); font-family: var(--serif); font-style: italic; font-size: 18px; line-height: 1.35; }
+.phone-card .note { font-size: 12px; opacity: 0.85; margin: 6px 0 12px; }
+.phone-card .warn { color: var(--red); }
+.phone-card .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.phone-card button { font-family: var(--type); font-size: 14px; padding: 8px 12px; background: transparent; border: 1.5px solid var(--ink); color: var(--ink); cursor: pointer; }
+.phone-card button.primary { background: var(--ink); color: var(--paper); }
+.phone-card .lines { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 12px; }
+.phone-card .line { display: grid; grid-template-columns: 16px 1fr auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px dotted rgba(36,26,16,0.35); }
+.phone-card .line .meta { grid-column: 2; font-size: 11px; opacity: 0.75; }
+.phone-card .line .act { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 4px; }
+.phone-card .line .act button { font-size: 12px; padding: 5px 7px; }
+.phone-card .tag { font-size: 11px; border: 1.5px solid var(--ink); padding: 2px 6px; transform: rotate(-2deg); display: inline-block; }
+.hud-roster .pact { display: inline-flex; gap: 2px; margin-left: 4px; vertical-align: middle; }
+.hud-roster .pact .chip { width: 9px; height: 9px; box-shadow: 0 0 0 1px rgba(36,26,16,0.7); }
+.hud-panel .betray { color: var(--red); font-size: 12px; }
+.hud-panel button.danger { background: var(--red); color: var(--paper); }
