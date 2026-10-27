@@ -16,7 +16,7 @@ const MAX_WATCHERS = 50;
 const HEARTBEAT_MS = 30_000;
 
 export function startServer({ port = 8261, dbPath = join(HERE, 'data', 'theatre.db'), aiDelay = 400, trustProxy = false, log = console.log,
-  rate = { bucket: BUCKET, refill: REFILL } } = {}) {
+  rate = { bucket: BUCKET, refill: REFILL }, telegramGap = 5000, telegramMax = 30, fogLeak = null, aiThink = true } = {}) {
   const store = openDb(dbPath);
   const subs = new Map();             // game.id -> Set<ws>
 
@@ -24,6 +24,10 @@ export function startServer({ port = 8261, dbPath = join(HERE, 'data', 'theatre.
   const games = new Games({
     store,
     aiDelay,
+    aiThink,
+    telegramGap,
+    telegramMax,
+    fogLeak,
     broadcast(g, build) {
       const set = subs.get(g.id);
       if (!set) return;
@@ -31,8 +35,8 @@ export function startServer({ port = 8261, dbPath = join(HERE, 'data', 'theatre.
       const cache = new Map();
       for (const ws of set) {
         const seat = viewerSeat(g, ws);
-        if (!cache.has(seat)) cache.set(seat, JSON.stringify(build(seat)));
-        send(ws, cache.get(seat));
+        if (!cache.has(seat)) { const m = build(seat); cache.set(seat, m ? JSON.stringify(m) : null); }
+        if (cache.get(seat)) send(ws, cache.get(seat));       // null = inte till den här mottagaren
       }
     },
     isOnline(g, seat) {
@@ -140,7 +144,12 @@ export function startServer({ port = 8261, dbPath = join(HERE, 'data', 'theatre.
       case 'list':
         return reply({ t: 'lobby', ...games.list(ws.player) });
       case 'history':
-        return reply(games.history(m.code, m.from, m.to));
+        return reply(games.history(m.code, m.from, m.to, ws.player));
+      case 'telegram': {
+        const to = m.to === null || m.to === undefined ? null : m.to;
+        const tg = games.telegram(ws.player, m.code, to, m.text);
+        return reply({ t: 'sent', code: m.code, id: tg.id });
+      }
       default:
         throw new GameError('bad-request', 'Unknown message.');
     }

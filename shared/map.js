@@ -83,5 +83,16 @@ export const CARDS = [
   { territory: null, symbol: 'wild' },
 ];
 
+// Sjövägar (grannar utan gemensam landgräns; samma som public/map/world.json:s crossings av slag sea/wrap).
+export const SEA_LANES = [
+  'alaska|kamchatka', 'greenland|northwest', 'greenland|ontario', 'greenland|quebec', 'greenland|iceland', 'brazil|north_africa',
+  'great_britain|iceland', 'iceland|scandinavia', 'great_britain|scandinavia', 'germany|great_britain', 'france|great_britain',
+  'france|north_africa', 'egypt|italy', 'italy|north_africa', 'east_africa|madagascar', 'east_africa|middle_east',
+  'madagascar|south_africa', 'japan|kamchatka', 'japan|mongolia', 'indonesia|siam', 'indonesia|new_guinea',
+  'indonesia|western_australia', 'new_guinea|western_australia', 'eastern_australia|new_guinea',
+];
+const SEA = new Set(SEA_LANES);
+export const bySea = (a, b) => SEA.has([a, b].sort().join('|'));
+
 // Grannskapet måste vara symmetriskt; kontrolleras i test/map.test.mjs.
 export const adjacent = (a, b) => TERRITORY[a].neighbors.includes(b);

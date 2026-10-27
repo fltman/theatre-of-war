@@ -55,6 +55,15 @@ CREATE TABLE IF NOT EXISTS stories (
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS stories_game ON stories(game_id, seq);
+CREATE TABLE IF NOT EXISTS telegrams (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_id   INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+  from_seat INTEGER NOT NULL,
+  to_seat   INTEGER,
+  text      TEXT NOT NULL,
+  ts        INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS telegrams_game ON telegrams(game_id, id);
 `;
 
 export function openDb(path) {
@@ -92,6 +101,12 @@ export class Store {
       insertStory: p('INSERT INTO stories (game_id, seq, story, created) VALUES (?, ?, ?, ?)'),
       stories: p('SELECT id, seq, story FROM stories WHERE game_id = ? ORDER BY seq, id'),
       activeGames: p("SELECT id FROM games WHERE status = 'active'"),
+      watchable: p(`SELECT g.id FROM games g WHERE g.status = 'active'
+        AND EXISTS (SELECT 1 FROM seats s WHERE s.game_id = g.id AND s.player IS NOT NULL)
+        ORDER BY g.updated DESC LIMIT ?`),
+      insertTelegram: p('INSERT INTO telegrams (game_id, from_seat, to_seat, text, ts) VALUES (?, ?, ?, ?, ?)'),
+      telegrams: p('SELECT id, from_seat, to_seat, text, ts FROM telegrams WHERE game_id = ? ORDER BY id DESC LIMIT ?'),
+      telegramCount: p('SELECT COUNT(*) AS n FROM telegrams WHERE game_id = ? AND from_seat = ?'),
       openGames: p(`SELECT g.id FROM games g WHERE g.status = 'lobby'
         AND EXISTS (SELECT 1 FROM seats s WHERE s.game_id = g.id AND s.kind = 'human' AND s.player IS NULL)
         ORDER BY g.updated DESC LIMIT ?`),
@@ -151,6 +166,19 @@ export class Store {
   stories(id) { return this.q.stories.all(id).map((r) => ({ id: r.id, seq: r.seq, story: J(r.story) })); }
 
   activeGameIds() { return this.q.activeGames.all().map((r) => r.id); }
+  // pågående partier med minst en människa (för "titta på andras krig"), senaste aktivitet först
+  watchableGameIds(limit = 20) { return this.q.watchable.all(limit).map((r) => r.id); }
+
+  addTelegram(id, from, to, text) {
+    const ts = Date.now();
+    const r = this.q.insertTelegram.run(id, from, to, text, ts);
+    return { id: Number(r.lastInsertRowid), from, to, text, ts };
+  }
+  // de senaste `limit` telegrammen, äldst först
+  telegrams(id, limit = 200) {
+    return this.q.telegrams.all(id, limit).reverse().map((r) => ({ id: r.id, from: r.from_seat, to: r.to_seat, text: r.text, ts: r.ts }));
+  }
+  telegramCount(id, seat) { return this.q.telegramCount.get(id, seat).n; }
   openGameIds(limit = 30) { return this.q.openGames.all(limit).map((r) => r.id); }
   myGameIds(player, limit = 30) {
     return this.q.myGames.all(player, player, Date.now() - 7 * 86400_000, limit).map((r) => r.id);

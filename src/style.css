@@ -201,3 +201,40 @@ body.in-menu .hud-top, body.in-menu .hud-roster, body.in-menu .hud-speed, body.i
 .hud-roster .pact .chip { width: 9px; height: 9px; box-shadow: 0 0 0 1px rgba(36,26,16,0.7); }
 .hud-panel .betray { color: var(--red); font-size: 12px; }
 .hud-panel button.danger { background: var(--red); color: var(--paper); }
+.phone-card .caller { display: flex; gap: 12px; align-items: center; margin: 4px 0 6px; }
+.phone-card .caller img { width: 64px; height: 80px; object-fit: cover; filter: sepia(0.25) contrast(1.05); box-shadow: 0 2px 6px rgba(0,0,0,0.4); transform: rotate(-2deg); border: 3px solid #f4ecd8; }
+.phone-card .caller b { display: block; font-family: var(--serif); font-size: 16px; }
+.phone-card .caller span { font-size: 12px; display: flex; gap: 5px; align-items: center; }
+.phone-card .terms { font-size: 12px; margin: 0 0 8px; }
+.phone-card blockquote small { display: block; font-style: normal; font-family: var(--type); font-size: 12px; margin-top: 6px; }
+
+/* ---------------------------------------------------------------- krigsmeny, händelse, repris, foto */
+.war-menu-btn { position: absolute; left: max(12px, env(safe-area-inset-left)); top: max(12px, env(safe-area-inset-top)); font-family: var(--type); font-size: 14px; padding: 7px 12px; border: none; cursor: pointer; color: var(--ink); background: var(--tex-worn, var(--paper)) center / 400% auto; box-shadow: 0 3px 10px var(--shadow); transform: rotate(-1deg); }
+body.in-menu .war-menu-btn, body.photo #hud, body.replaying .hud-panel { display: none; }
+.war-menu .dossier { max-height: 90vh; overflow-y: auto; }
+.war-menu button:disabled { opacity: 0.4; cursor: default; }
+.war-menu .help { font-family: var(--type); font-size: 13px; line-height: 1.5; max-width: 60ch; }
+.war-menu .help h3 { font-family: var(--stencil); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; margin: 16px 0 4px; color: var(--red); }
+.war-menu .help p { margin: 4px 0; }
+.war-menu .help table { border-collapse: collapse; } .war-menu .help td { padding: 1px 14px 1px 0; }
+.war-menu .slider { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.war-menu .slider input[type=range] { width: 180px; accent-color: var(--red); }
+.hud-event { position: absolute; top: 58px; left: 50%; transform: translate(-50%, -10px) rotate(0.8deg); opacity: 0; transition: all 0.5s ease; display: flex; gap: 8px; align-items: center; padding: 5px 12px; font-family: var(--type); font-size: 13px; background: var(--tex-worn, var(--paper)) center / 400% auto; box-shadow: 0 3px 10px var(--shadow); pointer-events: none; max-width: 92vw; }
+.hud-event.show { opacity: 1; transform: translate(-50%, 0) rotate(0.8deg); }
+.hud-event .i { font-size: 17px; } .hud-event b { color: var(--red); white-space: nowrap; }
+.hud-replay { position: absolute; top: 18%; left: 50%; transform: translateX(-50%) rotate(-3deg); font-family: var(--stencil); font-weight: 700; font-size: 34px; letter-spacing: 0.3em; color: rgba(240,230,210,0.9); border: 3px solid rgba(240,230,210,0.9); padding: 2px 18px; opacity: 0; transition: opacity 0.4s; pointer-events: none; text-shadow: 0 2px 8px #000; }
+.hud-replay.show { opacity: 1; }
+body.replaying::before, body.replaying::after { content: ''; position: fixed; left: 0; right: 0; height: 9vh; background: #000; z-index: 3; pointer-events: none; }
+body.replaying::before { top: 0; } body.replaying::after { bottom: 0; }
+.photo-bar { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 10px 14px; background: rgba(20,14,8,0.85); color: #efe5cc; font-family: var(--type); font-size: 13px; z-index: 6; max-width: 94vw; }
+.photo-bar button { font-family: var(--type); font-size: 13px; padding: 6px 10px; border: 1px solid #efe5cc; background: transparent; color: #efe5cc; cursor: pointer; }
+.photo-bar button.primary, .photo-bar button.on { background: #efe5cc; color: #1d140c; }
+.photo-bar input { accent-color: #c9a46a; width: 110px; } .photo-bar .hint { opacity: 0.7; }
+@media (max-width: 700px) { .war-menu-btn { top: auto; bottom: max(118px, calc(env(safe-area-inset-bottom) + 112px)); } .hud-event { top: 44px; font-size: 11px; } }
+.hud-hand { opacity: 0; transition: opacity 0.3s; flex-wrap: wrap; align-items: flex-end; max-width: 60vw; }
+.hud-hand.show { opacity: 1; pointer-events: auto; }
+.hud-hand .hand-hdr { width: 100%; font-family: var(--stencil); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #efe5cc; text-shadow: 0 1px 3px #000; margin-bottom: 2px; }
+.hud-hand .hand-hdr small { font-family: var(--type); letter-spacing: 0; text-transform: none; opacity: 0.85; margin-left: 6px; }
+/* telegrafen står till höger om krigsmenyns knapp */
+.tg { left: calc(max(12px, env(safe-area-inset-left)) + 104px) !important; }
+@media (max-width: 700px) { .tg { left: max(12px, env(safe-area-inset-left)) !important; } }

@@ -122,6 +122,7 @@ export const FALL = {
         (c) => `${c.T.CITY}, ${c.mday} — ${c.F.Army} claims to have taken ${c.T.ref} from ${c.D.army}. Our military correspondent notes that it is one thing to take a territory and quite another to keep it.`,
       ],
       [
+        (c) => (c.fogged ? `The strength of the forces engaged ${c.T.place} is unknown; our observers report only smoke and rumors.` : null),
         (c) => (c.lossA > 0 && c.lossD > 0 ? `The fighting cost ${c.F.army} ${divs(c.lossA)} and ${c.D.army} ${divs(c.lossD)} — losses which, our analysts point out, neither enemy can afford.` : null),
         (c) => (c.lossA === 0 ? `${c.F.Army} claims to have lost not a single man, a figure our analysts find hard to believe.` : null),
       ],
@@ -251,7 +252,7 @@ export const MIRACLE = {
     headline: [(c) => `Enemy Assault Collapses ${c.T.place}`],
     deck: [(c) => `${c.A.Army} humiliated — ${c.D.army} hardly better`],
     body: [
-      (c) => `${c.T.CITY}, ${c.mday} — ${c.A.Army} threw ${divs(c.startA)} at ${c.T.ref} and achieved nothing. ${c.D.Army} is crowing, which our correspondent finds unbecoming.`,
+      (c) => `${c.T.CITY}, ${c.mday} — ${c.A.Army} threw ${c.fogged || !c.startA ? 'forces of unknown strength' : divs(c.startA)} at ${c.T.ref} and achieved nothing. ${c.D.Army} is crowing, which our correspondent finds unbecoming.`,
     ],
   },
 };
@@ -355,4 +356,25 @@ export const DIPLO_WIRE = {
     ours: (c) => `GENEVA \u2014 Our treaty with ${c.O.army} has run its course. Our forces stand ready.`,
     others: (c) => `GENEVA \u2014 The enemy pact between ${c.A.army} and ${c.B.army} has lapsed, to no one\u2019s surprise.`,
   },
+};
+
+// ------------------------------------------------------------------ månadens världshändelse i propagandan
+// Regeln står alltid sant (WORLD_RULE i copy.js); bara rubrik och ingress vinklas.
+export const WORLD = {
+  strike: {
+    lost: { headline: ['Sabotage by Enemy Agents', 'Saboteurs Strike Our Factories'], deck: ['Foreign agents blamed as munitions output falls; arrests expected'] },
+    others: { headline: ['Enemy War Effort Falters', (c) => `Workers Revolt in ${c.W.S.armyBare} Factories`], deck: ['Morale collapses behind enemy lines'] },
+  },
+  oil: {
+    ours: { headline: ['Our Oil!', (c) => `Black Gold Flows for the ${c.U.armyBare}`], deck: [(c) => `The fields ${c.W.T.place} are ours — four more divisions for the cause`] },
+    others: { headline: ['Enemy Strikes Oil — Experts: Wells Will Run Dry'], deck: ['Geologists doubt the find will last the month'] },
+  },
+  harvest: {
+    ours: { headline: ['Our Granaries Overflow', 'A Harvest for Victory'], deck: [(c) => `Full bellies for our boys in ${c.W.C.name}`] },
+    others: { headline: ['Enemy Harvest “Mostly Weeds”'], deck: ['Our agricultural correspondent is unimpressed'] },
+  },
+  winter: { any: { headline: ['Our Boys Laugh at the Cold', 'General Winter Arrives — Enemy Unprepared'], deck: ['Our troops were issued two pairs of socks; the enemy, reportedly, none'] } },
+  heat: { any: { headline: ['Our Troops Thrive in the Heat', 'Enemy Wilts in African Sun'], deck: ['Our boys were raised on hot summers, says the War Office'] } },
+  gales: { any: { headline: ['Enemy Fleets Stranded by Gales', 'The Sea Fights for Us'], deck: ['Not one enemy troopship will reach our shores this month'] } },
+  volunteers: { any: { headline: ['Patriots Flock to Our Colors', 'A Nation Answers the Call'], deck: ['Enemy recruits described as “reluctant and mostly short”'] } },
 };

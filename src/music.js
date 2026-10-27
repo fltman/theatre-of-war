@@ -49,7 +49,7 @@ export class Music {
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3600;
       node = src.connect(hp).connect(lp);
     }
-    node.connect(gain).connect(this.audio.sfx);
+    node.connect(gain).connect(this.audio.mus);
     src.start(0, offset % buf.duration);
     this.playing[name] = { src, gain, volume };
     src.onended = () => { if (this.playing[name]?.src === src) delete this.playing[name]; };

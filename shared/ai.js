@@ -4,7 +4,7 @@
 // anfall tar en kontinent, slår ut en spelare eller ger turens kort), flytta reserver från inlandet till fronten.
 import { TERRITORY, CONTINENTS, CONTINENT, CARDS } from './map.js';
 import { AI_STYLES } from './factions.js';
-import { sets, owned, ownsContinent, path, apply, income, pactBetween, partners, actor } from './engine.js';
+import { sets, owned, ownsContinent, path, apply, income, pactBetween, partners, actor, canAttack } from './engine.js';
 
 const STYLE = {
   aggressive: { ratio: 1.0, stop: 1, split: 0 },
@@ -44,16 +44,27 @@ export function pactValue(st, p, q) {
   if (!border) return 0.1;                                   // ingen gemensam gräns: ofarlig men meningslös
   const count = (r) => owned(st, r).length;
   const leader = st.players.map((_, r) => r).filter((r) => st.players[r].alive).sort((a, b) => count(b) - count(a))[0];
-  let v = (theirs / (mine + 1)) * 1.2 - opp * 0.25 + guard * 0.8 - (st.players[q].betrayals ?? 0) * 0.9;
+  let v = (theirs / (mine + 1)) * 1.2 - opp * 0.25 + guard * 0.8 - (st.players[q].betrayals ?? 0) * 1.5;
   if (q === leader && count(q) > count(p) * 1.3) v -= 1.2;  // hjälp inte den som redan leder
   return v;
 }
 
 const ACCEPT = { aggressive: 0.6, strategist: 0.3, cautious: 0.05 };
+// Hur länge en sviken general vägrar all pakt med sveket (månader). Den försiktige förlåter aldrig.
+const GRUDGE = { aggressive: 12, strategist: 18, cautious: Infinity };
+
+// Har p ett agg mot q? Ger antal månader sedan sveket, eller null.
+export function grudge(st, p, q) {
+  const r = st.players[p]?.grudges?.[q];
+  return r == null ? null : st.round - r;
+}
 
 function answer(st) {
   const { from, to } = st.proposal;
-  const v = pactValue(st, to, from);
+  const g = grudge(st, to, from);
+  if (g != null && g < (GRUDGE[st.players[to].ai] ?? 18)) return { type: 'answer', accept: false };
+  let v = pactValue(st, to, from);
+  if (g != null) v -= 1.5;                                   // förlåtet men inte glömt
   return { type: 'answer', accept: v > (ACCEPT[st.players[to].ai] ?? 0.3) };
 }
 
@@ -67,6 +78,7 @@ function proposal(st, p) {
   let best = null, bestV = 0.9;
   st.players.forEach((x, q) => {
     if (q === p || !x.alive || pactBetween(st, p, q) || (x.betrayals ?? 0) >= 2) return;
+    if (grudge(st, p, q) != null) return;                    // ring aldrig den som svikit en
     const v = pactValue(st, p, q);
     if (v > bestV) { bestV = v; best = q; }
   });
@@ -168,6 +180,7 @@ function bestAttack(st, p, style, wish) {
     const force = st.armies[from] - 1;
     if (force < 1) continue;
     for (const to of enemyNeighbors(st, from)) {
+      if (!canAttack(st, from, to)) continue;                  // t.ex. storm till havs
       const def = st.armies[to];
       const v = targetValue(st, p, to, wish);
       if (pactBetween(st, p, st.owner[to]) && !mayBetray(st, p, v, (st.armies[from] - 1) / def)) continue;
@@ -283,6 +296,7 @@ function attackCandidates(st, p, n, style) {
     const force = st.armies[from] - 1;
     if (force < 1) continue;
     for (const to of enemyNeighbors(st, from)) {
+      if (!canAttack(st, from, to)) continue;
       const ratio = force / st.armies[to];
       if (ratio < 0.6) continue;
       if (pactBetween(st, p, st.owner[to])) continue;

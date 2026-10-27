@@ -32,7 +32,7 @@ Alla får `rid` (tal eller kort sträng); svaret på just den förfrågan bär s
 | t | fält | svar |
 |---|---|---|
 | `hello` | `token?`, `name?` (≤ 24 tecken) | `welcome`. Okänd/saknad token = ny spelare (med `token` i svaret). `name` byter namn. |
-| `create` | `seats: [{kind, faction, ai?}]` (2–6, unika fraktioner), `seat?` (platsen värden tar; standard första människoplatsen; `null` = bara titta), `options?: {victory}` (`'world'` eller 10–42 territorier) | `created` (som `game`) |
+| `create` | `seats: [{kind, faction, ai?}]` (2–6, unika fraktioner), `seat?` (platsen värden tar; standard första människoplatsen; `null` = bara titta), `options?: {victory, fog}` (`victory`: `'world'` eller 10–42 territorier; `fog: true` = krigsdimma) | `created` (som `game`) |
 | `join` | `code`, `seat?` | `game`. Tar en ledig människoplats i lobbyn. Har man redan plats: samma som `open`. |
 | `open` | `code` | `game`. Följ ett parti (efter omladdning/återanslutning). Utan plats = åskådare. |
 | `watch` | `code` | `game` utan plats, som åskådare. |
@@ -42,22 +42,25 @@ Alla får `rid` (tal eller kort sträng); svaret på just den förfrågan bär s
 | `handover` | `code`, `seat` | alla får `seats`. Platsen spelas av AI:n ("hand over to the generals"). Värden för vilken plats som helst, annars bara sin egen. Spelaren behåller platsen. |
 | `reclaim` | `code` | alla får `seats`. Ta tillbaka befälet över sin överlämnade plats. |
 | `list` | – | `lobby` |
-| `history` | `code`, `from`, `to?` | `history`: dragen `from < seq ≤ to` (högst 500 per förfrågan) |
+| `history` | `code`, `from`, `to?` | `history`: dragen `from < seq ≤ to` (högst 500 per förfrågan), redigerade för mottagaren vid krigsdimma |
+| `telegram` | `code`, `to` (plats, eller `null` = alla makter), `text` | `sent {code, id}`; mottagarna får `telegram`. Bara spelare med plats. Ren text på en rad, högst 140 tecken (längre kortas), högst 1 per 5 s och 30 per parti och plats |
 | `ping` | – | `pong` (klienten skickar var 20:e s) |
 
 ## Server → klient
 | t | fält | betydelse |
 |---|---|---|
 | `welcome` | `player: {id, name}`, `token?` | identiteten; `token` bara när spelaren skapades nu |
-| `game` / `created` | `code`, `status` (`lobby`\|`active`\|`over`), `options`, `seq`, `you: {seat, host}`, `seats`, `state` (null i lobbyn), `startEvents` | hela partiet; skickas som svar på `create`/`join`/`open`/`watch` |
+| `game` / `created` | `code`, `status` (`lobby`\|`active`\|`over`), `options` (`{victory, fog}`), `seq`, `you: {seat, host}`, `seats`, `state` (null i lobbyn), `startEvents`, `telegrams` (de senaste 50 mottagaren får se) | hela partiet; skickas som svar på `create`/`join`/`open`/`watch` |
 | `seats` | `code`, `seats: [{seat, faction, kind, ai, name, open, claimed, online}]` | platserna har ändrats (någon gick med/lämnade, kom/försvann, överlämning) |
 | `start` | `code`, `seq: 0`, `events`, `state`, `seats` | kriget börjar. `events` = motorns första `turn` + `income` |
 | `events` | `code`, `seq`, `by` (platsen som gjorde draget), `action`, `events`, `state` | ett godkänt drag (människa eller AI), till alla som följer partiet, även avsändaren. `victory` ligger bland `events` när kriget är slut |
 | `reject` | `code`, `reason`, `seq`, `state` | draget godkändes inte; synka till `state`/`seq`. `reason`: `not-started`, `over`, `spectator`, `seq`, `not-your-turn`, `handed-over`, `bad-action`, motorns koder (`phase`, `not-yours`, `not-adjacent`, `own-territory`, `too-few`, `dice`, `count`, `no-path`, `not-a-set`, `must-trade`, `unknown-action`) eller `illegal` |
-| `lobby` | `open: [summary]`, `mine: [summary]` | öppna partier (lobby med ledig plats) och mina (lobby/pågående + avslutade senaste veckan) |
+| `lobby` | `open: [summary]`, `mine: [summary]`, `active: [summary]` | öppna partier (lobby med ledig plats), mina (lobby/pågående + avslutade senaste veckan) och pågående krig med minst en människa att titta på (senaste aktivitet först, högst 20) |
+| `telegram` | `code`, `id`, `from` (plats), `to` (plats eller `null`), `text`, `ts` | ett telegram. Till alla: alla som följer partiet, även åskådare. Privat: bara avsändaren och mottagaren |
+| `sent` | `code`, `id` | svar till avsändaren av ett telegram |
 | `history` | `code`, `from`, `to`, `moves: [{seq, by, action, events}]` | dragloggen, för att spela upp det man missat eller göra repris |
 | `left` | `code` | |
-| `error` | `code`, `message` (engelska, kan visas) | `hello-first`, `bad-request`, `no-such-game`, `game-full`, `started`, `not-host`, `not-in-game`, `room-full`, `rate-limited`, `server-error` |
+| `error` | `code`, `message` (engelska, kan visas) | `hello-first`, `bad-request`, `no-such-game`, `game-full`, `started`, `not-host`, `not-in-game`, `room-full`, `rate-limited`, `telegram-limit`, `spectator`, `server-error` |
 | `pong` | – | |
 
 `summary` = `{ code, status, round, seq, seats: [{faction, kind, name, open}], turn: {seat, faction} | null, you, host, yourTurn, winner }`.
@@ -72,7 +75,8 @@ Alla får `rid` (tal eller kort sträng); svaret på just den förfrågan bär s
 ## Lagring (SQLite, `server/db.js`)
 `players(id, name, token_hash, created, seen)`, `games(id, code, status, host, options, seed, state, start_events, seq, created,
 updated)`, `seats(game_id, seat, player, faction, kind, ai, name)`, `actions(game_id, seq, seat, action, events, ts)` (append-only),
-`stories(id, game_id, seq, story, created)` (plats för pressens reportage till klippboken; inget protokoll än).
+`stories(id, game_id, seq, story, created)` (plats för pressens reportage till klippboken; inget protokoll än),
+`telegrams(id, game_id, from_seat, to_seat, text, ts)`.
 Ett parti kan alltid räknas om ur `seed` + `actions` (`Games.replay(code)`); `games.state` är bara en ögonblicksbild.
 
 ## Diplomati (pakter)
@@ -81,3 +85,13 @@ Ett parti kan alltid räknas om ur `seed` + `actions` (`Games.replay(code)`); `g
 (`shared/engine.js`): mottagaren av ett obesvarat paktförslag, annars den som har turen – servern avvisar andra med
 `not-your-turn`, och AI-platser svarar själva. `myTurn` i `src/online.js` följer samma regel. Nya avvisningskoder:
 `awaiting-answer`, `bad-partner`, `already-allied`, `one-call-per-turn`, `no-proposal`.
+
+## Krigsdimma (`options.fog`)
+
+Motorn räknar som vanligt (`state.fog = true`); servern redigerar vyn per mottagare (`server/fog.js`, CONTRACT.md "Krigsdimma"):
+- En spelare ser arméerna i egna territorier, deras grannar och pakt-partners territorier (`visibleTo` i motorn).
+  Åskådare (och utslagna spelare) ser bara ägandet. När kriget är slut syns allt för alla.
+- `state.armies[t]` är `null` för dolda territorier; `state.occupy.min/max` är `null` om utgångsläget är dolt.
+- I händelserna blir `place.n`, `battle.armies.from/to`, `occupy.n` och `fortify.n` `null` när mottagaren inte såg
+  territoriet varken före eller efter draget. Tärningar, förluster, ägarbyten och inkomster syns alltid.
+- `history` redigeras likadant (servern räknar fram läget före och efter varje drag ur loggen).

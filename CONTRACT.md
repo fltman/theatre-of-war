@@ -132,6 +132,39 @@ showSubtitle(text, { speaker, style: 'radio'|'tv', station, duration })   // und
 `src/broadcast.js` visar reportagen: tidning (fotot = rendering av striden), radio (kameran till radion), tv (kameran till tv:n,
 Flow-klipp + direktbild från bordet). Små radioinslag visas bara som remsa.
 
+## Världshändelser (månadens händelse)
+
+När en ny månad börjar (runda ≥ 2) drar motorn ur den seedade slumpen med ~55 % sannolikhet en händelse som gäller
+hela månaden: `state.world = { id, round, continent?, player?, territory? }` och händelsen
+`worldEvent { id, round, continent?, player?, territory? }` (före månadens första `turn`). `null` = ingen händelse.
+
+| id | regel |
+|---|---|
+| `winter` | Hård vinter i öster: anfall MOT ural, siberia, yakutsk, irkutsk, kamchatka, mongolia slår högst 2 tärningar |
+| `heat` | Hetta i Afrika: anfall mot Afrikas territorier slår högst 2 tärningar |
+| `gales` | Storm till havs: inga anfall över sjövägar (`SEA_LANES` i map.js) denna månad |
+| `harvest` | Rekordskörd i `continent`: +2 arméer till varje makt som äger minst ett territorium där |
+| `strike` | Strejk i krigsindustrin hos `player` (den som äger flest territorier): −3 i inkomst (minst 3) |
+| `oil` | Olja i `territory` (middle_east eller venezuela): ägaren får +4 |
+| `volunteers` | Frivilliga strömmar till: alla får +2 |
+
+`income()` tar med `world` i sin uppdelning (`{ total, territories, continents, world }`). `canAttack(st, from, to)` och
+`maxDice(st, from, to)` i engine.js – AI och UI ska fråga dem.
+
+## Krigsdimma
+
+`newGame({ ..., fog: true })` → `state.fog = true`. Motorn räknar som vanligt; dimman är en VY: en spelare ser arméerna
+i egna territorier, grannarna till egna, och pakt-partners territorier (`visibleTo(st, seat)` i engine.js). Ägaren
+(färgen) syns överallt. Online redigerar servern `publicState` och händelserna per mottagare: dolda territoriers
+`armies` blir `null`, och händelsernas antal (`place.n`, `battle.armies`, `occupy.n`, `fortify.n`) blir `null` när
+mottagaren inte ser dem. Klienten visar `null` som "?".
+
+## Generalerna (`src/generals.js`)
+
+`GENERALS[faction] = { name, title, short, portrait: 'img/generals/<faction>.webp', bio, voice?, lines: { propose, accept,
+decline, betray, betrayed, taunt, defeat, victory } }` – fiktiva fältmarskalkar, en per fraktion. Telefonkortet och
+listan visar porträtt och namn.
+
 ## Online (`server/PROTOCOL.md`)
 
 Servern är auktoritativ och kör `shared/engine.js` + `shared/ai.js` (AI-platser körs på servern). Klienterna skickar drag och

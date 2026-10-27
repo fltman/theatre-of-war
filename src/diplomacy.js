@@ -4,6 +4,7 @@ import { FACTION } from '../shared/factions.js';
 import { TERRITORY, IDS } from '../shared/map.js';
 import { pactBetween, PACT_MONTHS } from '../shared/engine.js';
 import { monthOf } from './hud.js';
+import { GENERALS, line, pick } from './generals.js';
 
 const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 const army = (st, p) => FACTION[st.players[p].faction].army.replace(/^the /, 'the ');
@@ -37,14 +38,29 @@ export function closeCard() {
 }
 
 // Ett samtal till människan: generalen på andra sidan föreslår en pakt.
+// Generalens porträtt och namn överst på kortet.
+function caller(st, p) {
+  const g = GENERALS[st.players[p].faction];
+  if (!g) return `<p class="who">${chip(st, p)} The field marshal of <b>${army(st, p)}</b> is on the line.</p>`;
+  return `<div class="caller"><img src="${g.portrait}" alt=""><div><b>${g.title} ${g.name}</b><span>${chip(st, p)} ${Army(st, p)}</span></div></div>`;
+}
+export function generalSays(st, p, cat, extra = {}) {
+  const f = st.players[p].faction;
+  if (!GENERALS[f]) return null;
+  return line(pick(f, cat, st.round * 7 + p), extra);
+}
+
 export function incoming(st, onVoice) {
   const { from, to, months } = st.proposal;
   const b = borderWith(st, to, from);
   const trust = st.players[from].betrayals ?? 0;
+  const said = generalSays(st, from, 'propose', { months, until: monthOf(st.round + months), army: army(st, to) })
+    ?? `No attacks between our armies for ${months === 6 ? 'six' : 'three'} months — until the end of ${monthOf(st.round + months)}. Do we have an understanding?`;
   const c = card(`
     <div class="hdr">TELEPHONE · PRIORITY CALL</div>
-    <p class="who">${chip(st, from)} The field marshal of <b>${army(st, from)}</b> is on the line.</p>
-    <blockquote>“No attacks between our armies for ${months === 6 ? 'six' : 'three'} months — until the end of ${monthOf(st.round + months)}. Do we have an understanding?”</blockquote>
+    ${caller(st, from)}
+    <blockquote>“${said}”</blockquote>
+    <p class="terms">Terms: no attacks either way for ${months === 6 ? 'six' : 'three'} months — until the end of ${monthOf(st.round + months)}.</p>
     <p class="note">${b.n ? `You share ${b.n} border${b.n === 1 ? '' : 's'}; ${b.theirs} of their armies stand along it.` : 'Your armies do not meet anywhere.'}
     ${trust ? `<br><b class="warn">They have broken their word ${trust === 1 ? 'once' : trust + ' times'} before.</b>` : ''}</p>
     <div class="row"><button data-a="yes" class="primary">Agree — shake on it</button><button data-a="no">Hang up</button></div>`);
@@ -64,7 +80,8 @@ export function switchboard(st, me) {
     const right = pact
       ? `<span class="tag">pact until ${monthOf(pact.until)}</span>`
       : PACT_MONTHS.map((m) => `<button data-q="${q}" data-m="${m}">${m} months</button>`).join('');
-    return `<div class="line">${chip(st, q)}<b>${Army(st, q)}</b><span class="meta">${b.n ? `${b.n} border${b.n === 1 ? '' : 's'} · ${b.theirs} armies` : 'no common border'}${pl.betrayals ? ' · <span class="warn">broke a pact</span>' : ''}</span><span class="act">${right}</span></div>`;
+    const bitter = pl.grudges?.[me] != null;
+    return `<div class="line">${chip(st, q)}<b>${Army(st, q)}</b><span class="meta">${b.n ? `${b.n} border${b.n === 1 ? '' : 's'} · ${b.theirs} armies` : 'no common border'}${pl.betrayals ? ' · <span class="warn">broke a pact</span>' : ''}${bitter ? ' · <span class="warn">has not forgiven you</span>' : ''}</span><span class="act">${right}</span></div>`;
   }).join('');
   const c = card(`
     <div class="hdr">SWITCHBOARD · ONE CALL PER MONTH</div>
@@ -77,9 +94,9 @@ export function switchboard(st, me) {
   });
 }
 
-// Kort besked i luren (svar på ett samtal människan ringde).
-export function reply(text, ms = 2600) {
-  card(`<div class="hdr">TELEPHONE</div><blockquote>${text}</blockquote>`);
+// Kort besked i luren (svar på ett samtal människan ringde). who: { st, p } visar generalen som svarar.
+export function reply(text, ms = 2600, who = null) {
+  card(`<div class="hdr">TELEPHONE</div>${who ? caller(who.st, who.p) : ''}<blockquote>${text}</blockquote>`);
   return new Promise((r) => setTimeout(() => { closeCard(); r(); }, ms));
 }
 

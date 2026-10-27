@@ -139,6 +139,16 @@ export class Board {
     if (kind === 'hover') u.uLift.value = on ? 1 : 0;
     if (kind === 'deploy') u.uDeploy.value = on ? 1 : 0;
   }
+  // Månadens väder på kartan: frost i öster, hetta i Afrika (tonas in och ut).
+  weather(frost = [], heat = []) {
+    const F = new Set(frost), H = new Set(heat);
+    for (const id in this.meshes) {
+      const u = this.meshes[id].material.uniforms;
+      const f1 = F.has(id) ? 1 : 0, h1 = H.has(id) ? 1 : 0, f0 = u.uFrost.value, h0 = u.uHeat.value;
+      if (f0 !== f1 || h0 !== h1) tween(1.6, (k) => { u.uFrost.value = f0 + (f1 - f0) * k; u.uHeat.value = h0 + (h1 - h0) * k; });
+    }
+  }
+
   clearMarks() { for (const id in this.meshes) { const u = this.meshes[id].material.uniforms; u.uHatch.value = 0; u.uTarget.value = 0; u.uLift.value = 0; u.uDeploy.value = 0; } }
 
   pick(raycaster) {
@@ -181,6 +191,7 @@ function washMaterial(edge, W, H) {
       uOrigin: { value: new THREE.Vector2() }, uProgress: { value: 1 }, uReach: { value: 1 },
       uEdge: { value: edge }, uSize: { value: new THREE.Vector2(W, H) },
       uHatch: { value: 0 }, uTarget: { value: 0 }, uLift: { value: 0 }, uDeploy: { value: 0 }, uTime: { value: 0 },
+      uFrost: { value: 0 }, uHeat: { value: 0 },
     },
     vertexShader: /* glsl */`
       varying vec2 vXZ;
@@ -192,7 +203,7 @@ function washMaterial(edge, W, H) {
     fragmentShader: /* glsl */`
       uniform vec3 uOld, uNew;
       uniform vec2 uOrigin, uSize;
-      uniform float uProgress, uReach, uHatch, uTarget, uLift, uDeploy, uTime;
+      uniform float uProgress, uReach, uHatch, uTarget, uLift, uDeploy, uTime, uFrost, uHeat;
       uniform sampler2D uEdge;
       varying vec2 vXZ;
       float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -227,6 +238,10 @@ function washMaterial(edge, W, H) {
         float cross = max(smoothstep(0.09, 0.03, s2), smoothstep(0.09, 0.03, s3)) * uTarget * (0.65 + 0.35 * sin(uTime * 5.0));
         wash *= 1.0 - hatch * 0.45;
         wash = mix(wash, wash * vec3(0.75, 0.25, 0.2), cross * 0.8);
+        // väder: frost (vitblå, kristallint brus) eller hetta (blekt, varmt)
+        float fr = smoothstep(0.35, 0.75, fbm(vXZ * 6.0 + 3.0)) * 0.55 + 0.3;
+        wash = mix(wash, vec3(0.93, 0.96, 1.0), uFrost * fr);
+        wash = mix(wash, wash * vec3(1.05, 0.95, 0.8) + vec3(0.06, 0.04, 0.0), uHeat * 0.6);
         float s4 = abs(fract((vXZ.x - vXZ.y * 0.3) * 9.0 - uTime * 0.6) - 0.5);
         wash = mix(wash, wash * vec3(1.0, 0.86, 0.55), smoothstep(0.06, 0.02, s4) * uDeploy * 0.7);
         gl_FragColor = vec4(wash, 1.0);
@@ -265,7 +280,21 @@ class Stack {
   }
 
   // Ställ in garnisonen. animate: nya figurer faller ned, överflödiga sjunker undan.
+  // Krigsdimma: dold garnison visar en ensam figur och "?" på flaggan. n = null betyder okänt antal (online).
+  setHidden(h) {
+    if (!!h === !!this.hidden) return;
+    this.hidden = !!h;
+    if (this.faction) this.set(this.n, this.faction);
+  }
+
   async set(n, faction, { animate = false } = {}) {
+    if (n == null || this.hidden) {
+      // okänt eller dolt: en figur som platshållare, flaggan visar "?"
+      const real = n;
+      n = 1; animate = false;
+      this.unknown = real == null;
+      this._real = real;
+    }
     const changedFaction = faction !== this.faction;
     if (changedFaction) {
       for (const k in this.pieces) { for (const p of this.pieces[k]) this.group.remove(p); this.pieces[k] = []; }
@@ -278,9 +307,10 @@ class Stack {
       this.group.add(this.flag);
       this.faction = faction;
     }
-    this.n = n;
-    this.flagTex.draw(n);
-    this.flag.visible = n > 0;
+    this.n = this.hidden || this.unknown ? (this._real ?? null) : n;
+    this.flagTex.draw(this.hidden || this.unknown ? '?' : n);
+    this.unknown = false;
+    this.flag.visible = n > 0 || this.hidden;
     const want = composition(n);
     const jobs = [];
     for (const k of ['artillery', 'tank', 'infantry']) {

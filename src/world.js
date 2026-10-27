@@ -61,9 +61,15 @@ export class World {
     this.controls.maxDistance = 34;
     this.controls.maxPolarAngle = 1.25;
     this.controls.screenSpacePanning = false;
+    // kartnavigering: vänster drag flyttar, höger drag vinklar, hjulet zoomar; ett finger flyttar, två zoomar/vrider
+    this.controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    this.controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+    this.controls.panSpeed = 1.1;
+    this.controls.zoomToCursor = true;
 
     this.timer = new THREE.Timer();
     this.updaters = new Set();
+    this.setupKeys();
     this.timeScale = 1;
     this.shake = 0;
 
@@ -73,6 +79,46 @@ export class World {
     this.setupPost();
     this.resize();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  // Tangentbord: pilar/WASD flyttar, Q/E vrider, R = översikten. Kameran hålls över bordet.
+  setupKeys() {
+    const held = new Set();
+    const typing = (e) => /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName ?? '');
+    window.addEventListener('keydown', (e) => {
+      if (typing(e) || e.metaKey || e.ctrlKey) return;
+      const k = e.key.toLowerCase();
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', 'q', 'e'].includes(k)) { held.add(k); this.onUserCamera?.(); e.preventDefault(); }
+      if (k === 'r') this.onOverview?.();
+    });
+    window.addEventListener('keyup', (e) => held.delete(e.key.toLowerCase()));
+    window.addEventListener('blur', () => held.clear());
+    const fwd = new THREE.Vector3(), right = new THREE.Vector3(), move = new THREE.Vector3();
+    this.addUpdater((dt) => {
+      const c = this.controls;
+      if (held.size && c.enabled) {
+        const dist = this.camera.position.distanceTo(c.target);
+        const speed = dist * 0.9 * dt;
+        this.camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+        right.crossVectors(fwd, this.camera.up).normalize();
+        move.set(0, 0, 0);
+        if (held.has('w') || held.has('arrowup')) move.add(fwd);
+        if (held.has('s') || held.has('arrowdown')) move.sub(fwd);
+        if (held.has('d') || held.has('arrowright')) move.add(right);
+        if (held.has('a') || held.has('arrowleft')) move.sub(right);
+        if (move.lengthSq()) { move.normalize().multiplyScalar(speed); this.camera.position.add(move); c.target.add(move); }
+        const rot = (held.has('q') ? 1 : 0) - (held.has('e') ? 1 : 0);
+        if (rot) {
+          const off = this.camera.position.clone().sub(c.target).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot * dt * 1.2);
+          this.camera.position.copy(c.target).add(off);
+        }
+      }
+      // håll fokuspunkten över bordet
+      const t = c.target, lim = { x: 17, z: 11 };
+      const cx = THREE.MathUtils.clamp(t.x, -lim.x, lim.x), cz = THREE.MathUtils.clamp(t.z, -lim.z, lim.z);
+      if (cx !== t.x || cz !== t.z) { this.camera.position.x += cx - t.x; this.camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
+      t.y = Math.max(0, Math.min(t.y, 3));
+    });
   }
 
   setupLights() {

@@ -21,9 +21,12 @@ import { Audio } from './audio.js';
 import { Annotations } from './annotations.js';
 import { Music } from './music.js';
 import { Attract } from './attract.js';
+import { WarMenu } from './warmenu.js';
+import { PhotoMode } from './photo.js';
 import { agePaper } from './paper.js';
 agePaper();
-import { LobbyUI, OnlineGame } from './lobby.js';
+import { LobbyUI, OnlineGame, onlineMenuItems } from './lobby.js';
+import { mountTelegraph } from './telegraph.js';
 
 const params = new URLSearchParams(location.search);
 const world = new World(document.getElementById('scene'));
@@ -52,6 +55,13 @@ const notes = new Annotations(world, board);
 const attract = new Attract({ world, rig, props, press, root: document.getElementById('overlay') });
 const director = new Director({ world, board, rig, fx, hud, dice, press, audio, notes, props });
 const ui = new UI({ world, board, hud, director });
+const photo = new PhotoMode({ world, rig, root: document.getElementById('overlay') });
+const warMenu = new WarMenu({
+  root: document.getElementById('overlay'), hud, world, director, press, audio, photo,
+  onMainMenu: () => { game?.stop(); game = null; telegraph?.unmount(); telegraph = null; warMenu.setActive(false); director.press?.skip?.(); menu(); },
+  onlineItems: () => game?.menuItems?.() ?? [],
+});
+warMenu.setActive(false);
 world.start();
 
 // ---------------------------------------------------------------- tempo
@@ -81,13 +91,17 @@ window.addEventListener('keydown', (e) => { if (e.key === ' ' && e.target === do
 
 const STYLES = ['aggressive', 'strategist', 'cautious'];
 let game = null;
+let telegraph = null;
 
 function leaveMenu() {
   attract.stop();
   document.body.classList.remove('in-menu');
+  warMenu.setActive(true);
+  rig.overview(0.9);                 // menyns kameraåkning ska inte lämna kameran vid tv:n
 }
 
 function startGame(config) {
+  telegraph?.unmount(); telegraph = null;
   leaveMenu();
   game?.stop();
   document.querySelector('.menu')?.remove();
@@ -116,6 +130,7 @@ function players(n, human = null) {
 
 function menu() {
   music.mode('menu');
+  warMenu.setActive(false);
   document.body.classList.add('in-menu');
   attract.start();
   const saved = LocalGame.saved();
@@ -135,6 +150,7 @@ function menu() {
       <div class="opts">
         <label>Your colours <span class="factions">${FACTIONS.map((f, i) => `<button class="chipbtn ${i === 1 ? 'on' : ''}" data-f="${f.id}" style="--c:${f.paint}" title="${f.name}"></button>`).join('')}</span></label>
         <label>Powers at war <select data-o="n">${[2, 3, 4, 5, 6].map((n) => `<option ${n === 4 ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label>Fog of war <input type="checkbox" data-o="fog"></label>
       </div>
     </div></div>`;
   document.getElementById('overlay').append(m);
@@ -142,7 +158,8 @@ function menu() {
   m.querySelectorAll('.chipbtn').forEach((b) => (b.onclick = () => { m.querySelectorAll('.chipbtn').forEach((x) => x.classList.remove('on')); b.classList.add('on'); faction = b.dataset.f; }));
   const n = () => +m.querySelector('[data-o=n]').value;
   m.querySelector('[data-a=watch]').onclick = () => startGame({ players: players(Math.max(3, n())), pace: 'film' });
-  m.querySelector('[data-a=play]').onclick = () => startGame({ players: players(n(), faction), pace: 'brisk' });
+  const fog = () => m.querySelector('[data-o=fog]').checked;
+  m.querySelector('[data-a=play]').onclick = () => startGame({ players: players(n(), faction), pace: 'brisk', fog: fog() });
   m.querySelector('[data-a=online]').onclick = () => lobby.home();
   const c = m.querySelector('[data-a=continue]');
   if (c) c.onclick = () => startGame({ resume: saved, pace: 'brisk' });
@@ -192,18 +209,21 @@ function startOnline(net, g) {
   press.newWar(g.you?.seat ?? null);
   music.mode('war');
   game = new OnlineGame({ director, ui, hud, net, onEnd: (st) => armistice(st, null) });
+  game.menuItems = () => onlineMenuItems(game);
+  telegraph?.unmount();
+  telegraph = mountTelegraph({ net, hud, root: document.getElementById('overlay'), audio });
   game.begin(g);
   window.TW.game = game;
 }
 
-window.TW = { world, board, rig, fx, hud, director, ui, props, dice, press, audio, music, notes, THREE, speed };
+window.TW = { world, board, rig, fx, hud, director, ui, props, dice, press, audio, music, notes, warMenu, photo, THREE, speed };
 
 const mode = params.get('mode');
 if (params.get('join')) lobby.join(params.get('join'));
 else if (params.get('watch')) lobby.watch(params.get('watch'));
 else if (mode) {
   const n = +(params.get('players') ?? (mode === 'watch' ? 6 : 4));
-  startGame({ players: players(n, mode === 'play' ? params.get('faction') ?? 'blue' : null), pace: params.get('pace') ?? (mode === 'watch' ? 'film' : 'brisk'), seed: params.has('seed') ? +params.get('seed') : undefined });
+  startGame({ fog: params.get('fog') === '1', players: players(n, mode === 'play' ? params.get('faction') ?? 'blue' : null), pace: params.get('pace') ?? (mode === 'watch' ? 'film' : 'brisk'), seed: params.has('seed') ? +params.get('seed') : undefined });
 } else {
   // bordet uppställt bakom menyn
   menu();

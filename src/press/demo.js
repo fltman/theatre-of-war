@@ -21,7 +21,7 @@ function runWar(seed, players, perspective = null) {
   let desk;
   let last;
   const out = [];
-  for (const { events, state } of warSteps({ seed, players, diplomacy: $('#diplo').checked })) {
+  for (const { events, state } of warSteps({ seed, players, diplomacy: $('#diplo').checked, worldEvents: $('#world').checked, fog: $('#fog').checked })) {
     desk ??= new Newsdesk({ players: state.players, seed, perspective });
     out.push(...desk.feed(events, state));
     last = state;
@@ -171,7 +171,9 @@ if (q.has('seed')) $('#seed').value = q.get('seed');
 if (q.has('players')) $('#players').value = q.get('players');
 if (q.has('persp')) $('#persp').value = q.get('persp');
 if (q.has('diplo')) $('#diplo').checked = true;
-$('#diplo').onchange = start;
+if (q.has('world')) $('#world').checked = true;
+if (q.has('fog')) $('#fog').checked = true;
+for (const id of ['#diplo', '#world', '#fog']) $(id).onchange = start;
 start();
 
 (async () => {
@@ -185,7 +187,10 @@ start();
   } else if (q.has('paper')) {
     const kind = q.get('paper');
     const rel = q.get('rel');
-    const i = /^[a-z]+$/.test(kind) ? stories.findIndex((s) => s.kind === kind && s.paper && (!rel || s.relation === rel)) : nth('paper', +kind);
+    const wid = q.get('wid');
+    const box = q.has('box'); // en vanlig tidning med månadens regelruta
+    const i = box ? stories.findIndex((s) => s.paper && s.kind !== 'world' && s.paper.columns[0]?.kind === 'rule')
+      : /^[a-z]+$/.test(kind) ? stories.findIndex((s) => s.kind === kind && s.paper && (!rel || s.relation === rel) && (!wid || s.worldId === wid)) : nth('paper', +kind);
     play(i, { hold: Infinity });
     setTimeout(() => (window.__pressReady = true), 2400);
   } else if (q.has('radio')) {

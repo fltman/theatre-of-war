@@ -24,6 +24,33 @@ export class HUD {
     root.append(this.top, this.roster, this.tray, this.toastBox, this.speedBox, this.panel, this.hover);
   }
 
+  // Månadens händelse: en lapp under datumet med regeln.
+  worldEvent(w) {
+    const TXT = {
+      winter: ['❄', 'General Winter', 'Attacks into the frozen east roll at most two dice'],
+      heat: ['☀', 'Heatwave in Africa', 'Attacks into Africa roll at most two dice'],
+      gales: ['≋', 'Gales at sea', 'No attacks across sea routes this month'],
+      harvest: ['❦', 'Bumper harvest', 'Powers holding land in {c} receive +2 armies'],
+      strike: ['✊', 'Munitions strike', '{p} receives three armies fewer'],
+      oil: ['⛽', 'Oil struck', 'The holder of {t} receives +4 armies'],
+      volunteers: ['✚', 'Volunteers', 'Every power receives +2 armies'],
+    };
+    this.eventTag ??= this.root.appendChild(el('div', 'hud-event'));
+    if (!w || !TXT[w.id]) { this.eventTag.classList.remove('show'); return; }
+    const [icon, title, rule] = TXT[w.id];
+    const st = this.lastState;
+    const r = rule.replace('{c}', CONTINENT[w.continent]?.name ?? '').replace('{t}', TERRITORY[w.territory]?.name ?? '')
+      .replace('{p}', st && w.player != null ? FACTION[st.players[w.player].faction].army.replace(/^t/, 'T') : 'The leading power');
+    this.eventTag.innerHTML = `<span class="i">${icon}</span><b>${title}</b><span>${r}</span>`;
+    this.eventTag.classList.add('show');
+  }
+
+  replayBanner(on) {
+    this.replayEl ??= this.root.appendChild(el('div', 'hud-replay', 'REPLAY'));
+    this.replayEl.classList.toggle('show', on);
+    document.body.classList.toggle('replaying', on);
+  }
+
   // Onlinekod i övre raden.
   wire(code) {
     this.wireTag ??= el('div', 'hud-date hud-wire');
@@ -40,10 +67,13 @@ export class HUD {
   }
 
   updateRoster(state) {
+    this.lastState = state;
     const rows = state.players.map((p, i) => {
       const f = FACTION[p.faction];
       const terr = Object.values(state.owner).filter((o) => o === i).length;
-      const arm = Object.keys(state.owner).filter((id) => state.owner[id] === i).reduce((s, id) => s + state.armies[id], 0);
+      // i dimman syns bara den egna sidans (och partners) arméstyrka
+      const seen = this.fogSeat == null || i === this.fogSeat || (state.pacts ?? []).some((x) => (x.a === i && x.b === this.fogSeat) || (x.b === i && x.a === this.fogSeat));
+      const arm = seen ? Object.keys(state.owner).filter((id) => state.owner[id] === i).reduce((s, id) => s + (state.armies[id] ?? 0), 0) : '?';
       const allies = (state.pacts ?? []).filter((x) => x.a === i || x.b === i).map((x) => (x.a === i ? x.b : x.a));
       const pact = allies.length ? `<span class="pact" title="pact">🤝${allies.map((q) => `<i class="chip" style="--c:${FACTION[state.players[q].faction].paint}"></i>`).join('')}</span>` : '';
       return `<div class="row ${p.alive ? '' : 'dead'} ${i === state.turn ? 'now' : ''}"><span class="chip" style="--c:${f.paint}"></span><b>${p.name}${pact}</b><span>${terr}</span><span>${arm}</span><span>${p.cards?.length ? '▮'.repeat(Math.min(p.cards.length, 6)) : ''}</span></div>`;
@@ -85,10 +115,16 @@ export class HUD {
   hand(cards = [], set = []) {
     this.handBox ??= this.root.appendChild(el('div', 'hud-hand'));
     const ICON = { infantry: '♟', tank: '▰', artillery: '✸', wild: '★' };
-    this.handBox.innerHTML = (cards ?? []).filter((i) => i != null).map((i) => {
+    const list = (cards ?? []).filter((i) => i != null);
+    const tip = (c) => `${c.symbol === 'wild' ? 'Wild card: completes any set' : `${c.symbol[0].toUpperCase() + c.symbol.slice(1)} card`}. Three of a kind, or one of each, turn in for armies${c.territory ? `; +2 extra in ${TERRITORY[c.territory].name} if you hold it then` : ''}.`;
+    this.handBox.innerHTML = list.length ? `<div class="hand-hdr">Your cards <small>${set.length ? 'a set is ready — “Turn in cards”' : list.length >= 5 ? 'five cards: you must turn in a set' : '3 alike or 1 of each = armies'}</small></div>` + list.map((i) => {
       const c = CARDS[i];
-      return `<div class="card ${set.includes(i) ? 'set' : ''}"><i>${ICON[c.symbol]}</i><b>${c.symbol === 'wild' ? 'Wild' : c.symbol}</b><span>${c.territory ? TERRITORY[c.territory].name : 'any'}</span></div>`;
-    }).join('');
+      return `<div class="card ${set.includes(i) ? 'set' : ''}" title="${tip(c)}"><i>${ICON[c.symbol]}</i><b>${c.symbol === 'wild' ? 'Wild' : c.symbol}</b><span>${c.territory ? TERRITORY[c.territory].name : 'any'}</span></div>`;
+    }).join('') : '';
+    this.handBox.classList.add('show');
+  }
+
+  hideHand() { this.handBox?.classList.remove('show');
   }
 
   toast(html, { kind = '', ms = 3200 } = {}) {

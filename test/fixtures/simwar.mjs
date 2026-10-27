@@ -23,14 +23,17 @@ const TRADE = [4, 6, 8, 10, 12, 15];
 
 // diplomacy: true lägger till telefondiplomati som i motorn: proposal → pact/declined, betrayal (före slagets
 // battle-händelser) och pactExpired vid månadsskiftet. Egen slump, så att kriget utan diplomati är oförändrat.
-export function* warSteps({ seed = 7, players = 4, maxRounds = 150, diplomacy = false } = {}) {
+// worldEvents: true drar månadens världshändelse (worldEvent före månadens första turn), fog: true sätter state.fog.
+export function* warSteps({ seed = 7, players = 4, maxRounds = 150, diplomacy = false, worldEvents = false, fog = false } = {}) {
   const R = rng(seed);
   const RD = rng(seed ^ 0x5bd1e995);
+  const RW = rng(seed ^ 0x2545f491);
   const die = () => 1 + Math.floor(R() * 6);
   const ids = TERRITORIES.map((t) => t.id);
   const state = {
     players: FACTIONS.slice(0, players).map((f) => ({ faction: f.id, name: f.name, kind: 'ai', ai: 'aggressive', alive: true, cards: [] })),
     owner: {}, armies: {}, turn: 0, round: 1, phase: 'reinforce', trades: 0, pacts: [], proposal: null,
+    world: null, ...(fog ? { fog: true } : {}),
   };
   const pactWith = (a, b) => state.pacts.find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a)) || null;
   // Utdelning
@@ -180,6 +183,20 @@ export function* warSteps({ seed = 7, players = 4, maxRounds = 150, diplomacy = 
         state.round++;
         for (const x of state.pacts.filter((x) => x.until < state.round)) events.push({ type: 'pactExpired', a: x.a, b: x.b });
         state.pacts = state.pacts.filter((x) => x.until >= state.round);
+        state.world = null;
+        if (worldEvents && RW() < 0.55) {
+          const ids = ['winter', 'heat', 'gales', 'harvest', 'strike', 'oil', 'volunteers'];
+          const id = ids[Math.floor(RW() * ids.length)];
+          const w = { id, round: state.round };
+          if (id === 'harvest') w.continent = CONTINENTS[Math.floor(RW() * CONTINENTS.length)].id;
+          if (id === 'strike') {
+            const alive = state.players.map((_, i) => i).filter((i) => state.players[i].alive);
+            w.player = alive.sort((a, b) => owned(b).length - owned(a).length)[0];
+          }
+          if (id === 'oil') w.territory = RW() < 0.5 ? 'middle_east' : 'venezuela';
+          state.world = w;
+          events.push({ type: 'worldEvent', ...w });
+        }
       }
     } while (!state.players[next].alive);
     state.turn = next;

@@ -4,12 +4,13 @@ import { createHash, randomBytes, randomUUID, randomInt } from 'node:crypto';
 import { newGame, apply, actor } from '../shared/engine.js';
 import { decide } from '../shared/ai.js';
 import { FACTION } from '../shared/factions.js';
+import { sight, eventSight, fogArmies, fogOccupy, fogEvents } from './fog.js';
 
 export const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const STYLES = ['aggressive', 'strategist', 'cautious'];
 // Motorns felkoder (shared/engine.js) som klienten får tillbaka i reject.
 const ENGINE_CODES = new Set(['over', 'phase', 'not-a-set', 'must-trade', 'not-yours', 'count', 'not-adjacent', 'own-territory',
-  'too-few', 'dice', 'no-path', 'unknown-action', 'players', 'awaiting-answer', 'bad-partner', 'already-allied', 'one-call-per-turn', 'no-proposal']);
+  'too-few', 'dice', 'no-path', 'unknown-action', 'players', 'awaiting-answer', 'bad-partner', 'already-allied', 'one-call-per-turn', 'no-proposal', 'gales']);
 
 export class GameError extends Error {
   constructor(code, message) { super(message ?? code); this.code = code; }
@@ -25,15 +26,25 @@ export function cleanName(s, fallback) {
 }
 
 // Det klienten får se av tillståndet: ingen slump (tärningarna går inte att förutsäga), ingen kortlek,
-// och bara sina egna kort (andras ersätts med null – antalet syns).
-export function publicState(state, seat) {
+// bara sina egna kort (andras ersätts med null – antalet syns) och, i krigsdimma, bara de arméer platsen ser.
+// leak: testkrok som stänger av en redigering (för att visa att läcktestet fäller).
+export function publicState(state, seat, leak = null) {
   if (!state) return null;
   const { rng, seed, deck, ...rest } = state;
+  const vis = leak === 'state' ? null : sight(state, seat);
   return {
     ...rest,
+    armies: fogArmies(state.armies, vis),
+    occupy: fogOccupy(state.occupy, vis),
     deckSize: deck.length,
     players: state.players.map((p, i) => (i === seat ? p : { ...p, cards: p.cards.map(() => null) })),
   };
+}
+
+// Telegrammets text: ren text på en rad, högst 140 tecken.
+export function cleanTelegram(s) {
+  if (typeof s !== 'string') return '';
+  return s.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
 }
 
 export class Games {
@@ -44,14 +55,22 @@ export class Games {
    * @param {(game, build: (viewer) => object) => void} o.broadcast  skicka till alla som följer partiet
    * @param {(game, seat) => boolean} o.isOnline  är platsens spelare ansluten till partiet just nu
    */
-  constructor({ store, aiDelay = 400, broadcast = () => {}, isOnline = () => false }) {
+  // aiThink: generalerna tänker framåt (Monte Carlo). false = snabba regelbaserade beslut (testerna).
+  constructor({ store, aiDelay = 400, aiThink = true, broadcast = () => {}, isOnline = () => false, telegramGap = 5000, telegramMax = 30, fogLeak = null }) {
+    this.aiThink = aiThink;
     this.store = store;
     this.aiDelay = aiDelay;
     this.broadcast = broadcast;
     this.isOnline = isOnline;
+    this.telegramGap = telegramGap;  // ms mellan två telegram från samma plats
+    this.telegramMax = telegramMax;  // telegram per plats och parti
+    this.fogLeak = fogLeak;          // testkrok: 'state' | 'battle' redigeras inte
     this.cache = new Map();          // id -> game
+    this.lastTelegram = new Map();   // `${game}:${seat}` -> ts
     this.closed = false;
   }
+
+  view(state, seat) { return publicState(state, seat, this.fogLeak); }
 
   // Efter omstart: ladda pågående partier och låt AI:n fortsätta där den var.
   resume() {
@@ -139,7 +158,7 @@ export class Games {
     }
     let victory = 'world';
     if (Number.isInteger(options.victory) && options.victory >= 10 && options.victory <= 42) victory = options.victory;
-    const opts = { victory };
+    const opts = { victory, fog: options.fog === true };
     const code = this.newCode();
     const seed = randomInt(1, 2 ** 31);
     const id = this.store.insertGame({ code, host: player.id, options: opts, seed, seats: list });
@@ -183,17 +202,13 @@ export class Games {
       s.kind = 'ai';
       this.store.setSeat(g.id, s.seat, null, 'ai', s.name);
     }
-    const { state, events } = newGame({
-      seed: g.seed,
-      victory: g.options.victory,
-      players: g.seats.map((s) => ({ faction: s.faction, name: s.name, kind: s.kind, ai: s.ai })),
-    });
+    const { state, events } = this.newWar(g);
     g.state = state;
     g.startEvents = events;
     g.seq = 0;
     g.status = 'active';
     this.store.start(g.id, state, events);
-    this.broadcast(g, (viewer) => ({ t: 'start', code: g.code, seq: 0, events, state: publicState(state, viewer), seats: this.seatInfo(g) }));
+    this.broadcast(g, (viewer) => ({ t: 'start', code: g.code, seq: 0, events: this.eventsFor(state, state, events, viewer), state: this.view(state, viewer), seats: this.seatInfo(g) }));
     this.pump(g);
     return g;
   }
@@ -202,7 +217,7 @@ export class Games {
   act(player, code, seq, action) {
     const g = this.byCode(code);
     const seat = this.seatOf(g, player.id);
-    const reject = (reason) => ({ reject: { t: 'reject', code: g.code, reason, seq: g.seq, state: publicState(g.state, seat) } });
+    const reject = (reason) => ({ reject: { t: 'reject', code: g.code, reason, seq: g.seq, state: this.view(g.state, seat) } });
     if (g.status === 'lobby') return reject('not-started');
     if (g.status === 'over') return reject('over');
     if (seat === null) return reject('spectator');
@@ -220,13 +235,28 @@ export class Games {
   }
 
   commit(g, seat, action) {
-    const { state, events } = apply(g.state, action);
+    const pre = g.state;
+    const { state, events } = apply(pre, action);
     const seq = g.seq + 1;
     this.store.append(g.id, seq, seat, action, events, state);
     g.state = state;
     g.seq = seq;
     if (state.phase === 'over') g.status = 'over';
-    this.broadcast(g, (viewer) => ({ t: 'events', code: g.code, seq, by: seat, action, events, state: publicState(state, viewer) }));
+    this.broadcast(g, (viewer) => ({ t: 'events', code: g.code, seq, by: seat, action, events: this.eventsFor(pre, state, events, viewer), state: this.view(state, viewer) }));
+  }
+
+  // Händelserna som mottagaren får se (krigsdimma: antal i territorier den inte ser blir null).
+  eventsFor(pre, post, events, seat) {
+    return fogEvents(events, eventSight(pre, post, seat), this.fogLeak === 'battle' ? 'battle' : null);
+  }
+
+  newWar(g) {
+    const r = newGame({
+      seed: g.seed, victory: g.options.victory, fog: !!g.options.fog,
+      players: g.seats.map((s) => ({ faction: s.faction, name: s.name, kind: s.kind, ai: s.ai })),
+    });
+    if (g.options.fog) r.state.fog = true;            // äldre motor utan fog-parametern: dimman är bara en vy
+    return r;
   }
 
   // AI-turer: kör nästa drag efter en paus om det är en AI-plats tur.
@@ -240,7 +270,7 @@ export class Games {
       g.aiCancel = null;
       if (this.closed || g.status !== 'active' || actor(g.state) !== seat || g.seats[seat].kind !== 'ai') return;
       try {
-        this.commit(g, seat, decide(g.state));
+        this.commit(g, seat, decide(g.state, { think: this.aiThink }));
       } catch (e) {
         // Ska aldrig hända (motorn och AI:n testas tillsammans). Avsluta turen hellre än att fastna.
         console.error(`AI-fel i ${g.code}:`, e.message);
@@ -300,7 +330,9 @@ export class Games {
     return {
       t: 'game', code: g.code, status: g.status, options: g.options, seq: g.seq,
       you: { seat, host: !!player && g.host === player.id },
-      seats: this.seatInfo(g), state: publicState(g.state, seat), startEvents: g.startEvents,
+      seats: this.seatInfo(g), state: this.view(g.state, seat),
+      startEvents: g.state ? this.eventsFor(g.state, g.state, g.startEvents, seat) : g.startEvents,
+      telegrams: this.telegramsFor(g, seat),
     };
   }
 
@@ -321,25 +353,62 @@ export class Games {
     return {
       open: this.store.openGameIds().map((id) => this.summary(this.load(id), player)),
       mine: this.store.myGameIds(player.id).map((id) => this.summary(this.load(id), player)),
+      active: this.store.watchableGameIds(20).map((id) => this.summary(this.load(id), player)),
     };
   }
 
-  history(code, from = 0, to) {
+  history(code, from = 0, to, player = null) {
     const g = this.byCode(code);
     const f = Math.max(0, from | 0), t = Math.min(g.seq, to == null ? g.seq : to | 0);
     if (t - f > 500) fail('bad-request', 'Ask for at most 500 moves at a time.');
-    return { t: 'history', code: g.code, from: f, to: t, moves: this.store.actions(g.id, f, t) };
+    const moves = this.store.actions(g.id, f, t);
+    const seat = player ? this.seatOf(g, player.id) : null;
+    if (g.options.fog && g.status !== 'over' && moves.length) {
+      // dimman beror på läget före och efter varje drag: räkna fram dem ur loggen
+      let { state } = this.newWar(g);
+      const want = new Map(moves.map((m) => [m.seq, m]));
+      for (const m of this.store.actions(g.id, 0, t)) {
+        const post = apply(state, m.action).state;
+        const hit = want.get(m.seq);
+        if (hit) hit.events = this.eventsFor(state, post, hit.events, seat);
+        state = post;
+      }
+    }
+    return { t: 'history', code: g.code, from: f, to: t, moves };
   }
 
   /** Räkna om ett parti ur frö + dragloggen (för kontroll och repris). */
   replay(code) {
     const g = this.byCode(code);
-    let { state } = newGame({
-      seed: g.seed, victory: g.options.victory,
-      players: g.seats.map((s) => ({ faction: s.faction, name: s.name, kind: s.kind, ai: s.ai })),
-    });
+    let { state } = this.newWar(g);
     for (const m of this.store.actions(g.id)) state = apply(state, m.action).state;
     return state;
+  }
+
+  // ------------------------------------------------------------------ telegram
+
+  /** Telegram till alla (to = null) eller en plats. Ren text, högst 140 tecken, glest och ransonerat. */
+  telegram(player, code, to, text) {
+    const g = this.byCode(code);
+    const seat = this.seatOf(g, player.id);
+    if (seat === null) fail('spectator', 'Only commanders may send telegrams.');
+    if (to !== null && (!Number.isInteger(to) || !g.seats[to] || to === seat)) fail('bad-request', 'No such recipient.');
+    const body = cleanTelegram(text);
+    if (!body) fail('bad-request', 'The telegram is empty.');
+    const key = `${g.id}:${seat}`;
+    const now = Date.now();
+    if (now - (this.lastTelegram.get(key) ?? 0) < this.telegramGap) fail('rate-limited', 'The wire is busy. Wait a few seconds.');
+    if (this.store.telegramCount(g.id, seat) >= this.telegramMax) fail('telegram-limit', 'You have sent all the telegrams allowed in this war.');
+    this.lastTelegram.set(key, now);
+    const tg = this.store.addTelegram(g.id, seat, to, body);
+    const msg = { t: 'telegram', code: g.code, ...tg };
+    // till alla: alla som följer partiet (även åskådare); privat: bara avsändaren och mottagaren
+    this.broadcast(g, (viewer) => (to === null || viewer === seat || viewer === to ? msg : null));
+    return tg;
+  }
+
+  telegramsFor(g, seat) {
+    return this.store.telegrams(g.id).filter((x) => x.to === null || (seat !== null && (x.from === seat || x.to === seat))).slice(-50);
   }
 }
 

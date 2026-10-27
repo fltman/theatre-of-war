@@ -53,7 +53,7 @@ test('varje reportage har rätt fält för sitt medium', () => {
         const p = s.paper;
         assert.ok(p.masthead && p.edition && p.price && p.headline && p.deck && p.body.length >= 2 && p.photoCaption, s.id);
         assert.equal(p.headline, p.headline.toUpperCase());
-        assert.equal(p.columns.length, 3);
+        assert.ok(p.columns.length === 3 || (p.columns.length === 4 && p.columns[0].kind === 'rule'), s.id);
         assert.equal(p.ads.length, 2);
       }
       if (s.tv) {
@@ -450,4 +450,101 @@ test('diplomati: avböjda förslag och utgångna pakter hamnar i notisspalten', 
   const { out } = diploWar(42, 6);
   const brief = out.filter((s) => s.paper).map((s) => s.paper.columns[0].text).join('\n');
   assert.match(brief, /GENEVA \(AW\) — .*(declined|turned down|expired|ran out)/);
+});
+
+// ------------------------------------------------------------------ månadens världshändelse och krigsdimma
+
+function worldWar(seed, players, perspective = null, fog = false) {
+  let desk;
+  const out = [];
+  const problems = [];
+  for (const { events, state } of warSteps({ seed, players, worldEvents: true, fog })) {
+    desk ??= new Newsdesk({ players: state.players, seed, perspective });
+    const we = events.find((e) => e.type === 'worldEvent');
+    const stories = desk.feed(events, state);
+    out.push(...stories);
+    if (we) {
+      const s = stories.find((x) => x.kind === 'world');
+      if (!s) { problems.push(`r${we.round}: ingen tidning för ${we.id}`); continue; }
+      if (s.medium !== 'paper' || !s.rule || s.paper.rule !== s.rule) problems.push(`${s.id}: regeln saknas`);
+      const expect = { winter: /two dice/, heat: /Africa roll no more than two dice/, gales: /sea lanes/, harvest: /two extra divisions/,
+        strike: /three fewer divisions/, oil: /four extra divisions/, volunteers: /Every power receives two extra/ }[we.id];
+      if (!expect.test(s.rule)) problems.push(`${s.id}: fel regel för ${we.id}: ${s.rule}`);
+      if (we.id === 'oil') {
+        const holder = desk.faction(state.owner[we.territory]).army;
+        if (!s.rule.includes(holder)) problems.push(`${s.id}: fel ägare av oljan`);
+      }
+      if (we.id === 'strike' && !s.rule.startsWith(desk.faction(we.player).Army)) problems.push(`${s.id}: fel strejkande armé`);
+    }
+    // krigsdimma: inga styrkor där sidan inte ser
+    if (fog && perspective != null) {
+      for (const s of stories) {
+        if (!s.paper || s.focus.players.includes(desk.perspective) || !s.focus.territories.length) continue;
+        const vis = desk.visibleTo(desk.perspective);
+        const hidden = s.focus.territories.some((t) => !vis.has(t));
+        if (hidden && /\bmassed\b|Facing them|stood against|threw (?!forces of unknown)\w+ division|outnumbered them/.test(s.paper.body.join(' '))) problems.push(`${s.id}: styrkor syns genom dimman`);
+      }
+    }
+  }
+  return { out, problems };
+}
+
+test('världshändelse: egen förstasida med regeln i klartext, sann', () => {
+  for (const [seed, players] of [[7, 4], [11, 6], [42, 6]]) {
+    const { out, problems } = worldWar(seed, players);
+    assert.deepEqual(problems, []);
+    const worlds = out.filter((s) => s.kind === 'world');
+    assert.ok(worlds.length >= 3, `${seed}: ${worlds.length} världshändelser`);
+    // regeln står också som ruta i månadens övriga tidningar
+    for (const s of out.filter((x) => x.paper && x.kind !== 'world')) {
+      const w = worlds.find((x) => x.round === s.round);
+      if (w) assert.equal(s.paper.columns[0].kind === 'rule' && s.paper.columns[0].text, w.rule, s.id);
+    }
+    // världssidan tränger inte undan månadens krigsnyheter (egen plats utanför budgeten)
+    for (const r of new Set(worlds.map((s) => s.round))) {
+      const papers = out.filter((s) => s.round === r && s.medium === 'paper' && s.kind !== 'world' && s.priority < 85);
+      assert.ok(papers.length <= 1, `runda ${r}`);
+    }
+  }
+});
+
+test('världshändelse: propagandan vinklar rubriken men regeln är densamma', () => {
+  const neutral = worldWar(7, 4).out.filter((s) => s.kind === 'world');
+  for (const p of [0, 1, 2, 3]) {
+    const { out, problems } = worldWar(7, 4, p);
+    assert.deepEqual(problems, []);
+    for (const s of out.filter((x) => x.kind === 'world')) {
+      const n = neutral.find((x) => x.round === s.round);
+      assert.equal(s.rule, n.rule);
+      // strejk hos oss = sabotage
+      if (s.focus.players[0] === s.perspective && /fewer divisions/.test(s.rule)) assert.match(s.paper.headline, /SABOT/);
+    }
+  }
+});
+
+test('krigsdimma: sidans tidning avslöjar inga styrkor den inte ser', () => {
+  for (const p of [0, 1, 2, 3]) assert.deepEqual(worldWar(7, 4, p, true).problems, []);
+  // skarpt fall: två andra arméer slåss långt bort (Kamtjatka → Japan). Utan dimma står styrkan, med dimma inte.
+  const three = [{ faction: 'red', alive: true }, { faction: 'blue', alive: true }, { faction: 'green', alive: true }];
+  const miracle = (fog) => {
+    const desk = new Newsdesk({ players: three, seed: 4, perspective: 0, budget: { paper: 9 } });
+    const st = { players: three, owner: { argentina: 0, kamchatka: 1, japan: 2 }, armies: {}, round: 2, fog, pacts: [] };
+    desk.feed([{ type: 'turn', player: 1, round: 1 }], st);
+    const roll = (from) => ({ type: 'battle', player: 1, defender: 2, from: 'kamchatka', to: 'japan', dice: { a: [3, 2, 1], d: [6, 5] }, losses: { a: 2, d: 0 }, armies: { from, to: 2 } });
+    for (const n of [10, 8, 6]) desk.feed([roll(n)], st);
+    return desk.feed([{ type: 'turn', player: 2, round: 1 }], st).find((x) => x.kind === 'miracle');
+  };
+  assert.match(miracle(false).paper.body.join(' '), /threw twelve divisions|threw 12 divisions/);
+  assert.match(miracle(true).paper.body.join(' '), /forces of unknown strength/);
+  assert.doesNotMatch(miracle(true).paper.body.join(' '), /twelve|12 divisions/);
+  // servern skriver null för dolda antal: inga hål i texten
+  const players = [{ faction: 'red', alive: true }, { faction: 'blue', alive: true }];
+  const desk = new Newsdesk({ players, seed: 1, perspective: 0 });
+  const st = { players, owner: { germany: 1, france: 1, italy: 1 }, armies: {}, round: 2, fog: true, pacts: [] };
+  desk.feed([{ type: 'turn', player: 1, round: 1 }], st);
+  const out = desk.feed([
+    { type: 'battle', player: 1, defender: 0, from: 'france', to: 'germany', dice: { a: [6, 5, 4], d: [2, 1] }, losses: { a: 0, d: 2 }, armies: { from: null, to: null } },
+    { type: 'conquer', player: 1, defender: 0, from: 'france', to: 'germany' },
+  ], st);
+  for (const s of out) for (const t of [...(s.paper ? s.paper.body : []), ...s.radio.lines.map((l) => l.text)]) assert.doesNotMatch(t, /null|NaN|undefined/, t);
 });

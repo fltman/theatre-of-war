@@ -1,8 +1,9 @@
 // Regin: gör om motorns händelser till scener på bordet. Håller ett eget "visat läge" (view) som följer
 // händelserna steg för steg, så att räknare och färger ändras i takt med animationerna – inte när draget räknats ut.
 import * as THREE from 'three';
-import { TERRITORY } from '../shared/map.js';
-import { reply } from './diplomacy.js';
+import { TERRITORY, TERRITORIES } from '../shared/map.js';
+import { visibleTo } from '../shared/engine.js';
+import { reply, generalSays } from './diplomacy.js';
 import { monthOf } from './hud.js';
 import { FACTION } from '../shared/factions.js';
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -46,6 +47,8 @@ export class Director {
   get instant() { return speed.factor >= 50; }
 
   setup(state) {
+    this.lastState = state;
+    this.lastBattle = null;
     this.notes?.clear();
     this.fx.clearBurns();
     this.stats = { battles: 0, rolls: 0, conquests: 0, biggest: null };
@@ -57,6 +60,31 @@ export class Director {
       this.board.stacks[id].set(state.armies[id], f);
     }
     this.hud.setTurn(state);
+    this.applyFog(state);
+    this.applyWeather(state);
+  }
+
+  // Krigsdimma: vem som tittar (lokalt: den enda människan; online: den egna platsen; annars ingen dimma).
+  viewerSeat(state) {
+    if (!state.fog) return null;
+    if (this.localSeats) return this.localSeats.size === 1 ? [...this.localSeats][0] : null;
+    const humans = state.players.map((p, i) => (p.kind === 'human' ? i : -1)).filter((i) => i >= 0);
+    return humans.length === 1 ? humans[0] : null;
+  }
+  applyFog(state) {
+    const seat = this.viewerSeat(state);
+    const vis = seat == null ? null : visibleTo(state, seat);
+    for (const id in this.board.stacks) this.board.stacks[id].setHidden(vis ? !vis.has(id) : false);
+    this.hud.fogSeat = seat;
+  }
+  hidden(id) { return !!this.board.stacks[id]?.hidden; }
+
+  applyWeather(state) {
+    const w = state.world?.round === state.round ? state.world : null;
+    const frost = w?.id === 'winter' ? ['ural', 'siberia', 'yakutsk', 'irkutsk', 'kamchatka', 'mongolia'] : [];
+    const heat = w?.id === 'heat' ? TERRITORIES.filter((t) => t.continent === 'africa').map((t) => t.id) : [];
+    this.board.weather(frost, heat);
+    this.hud.worldEvent?.(w);
   }
 
   // Spela upp ett drags händelser. state = läget efter draget.
@@ -81,6 +109,9 @@ export class Director {
         i++;
       }
       this.reconcile(state);
+      this.applyFog(state);
+      this.applyWeather(state);
+      this.lastState = state;
       this.hud.updateRoster(state);
       if (this.press) await this.press.after(events, state, this);
     } finally {
@@ -94,7 +125,7 @@ export class Director {
     for (const id in state.owner) {
       const f = this.faction(state, state.owner[id]);
       if (this.view.owner[id] !== f) { this.board.setOwner(id, f); this.view.owner[id] = f; }
-      if (this.view.armies[id] !== state.armies[id] || this.board.stacks[id].faction !== f) {
+      if (this.view.armies[id] !== state.armies[id] || this.board.stacks[id].faction !== f || state.armies[id] == null) {
         if (this.pending && (id === this.pending.from || id === this.pending.to)) continue;
         this.view.armies[id] = state.armies[id];
         this.board.stacks[id].set(state.armies[id], f);
@@ -128,7 +159,8 @@ export class Director {
         break;
       }
       case 'place': {
-        const n = (this.view.armies[e.territory] += e.n);
+        const n = e.n == null || this.view.armies[e.territory] == null ? null : (this.view.armies[e.territory] += e.n);
+        if (n == null) this.view.armies[e.territory] = null;
         const human = state.players[e.player].kind === 'human';
         if (!human && e.n >= 3 && this.pace.film === 0 && !this.instant) await this.rig.look(this.board.anchor(e.territory), 3.6, 1.1);
         this.audio?.play('place');
@@ -148,8 +180,14 @@ export class Director {
         this.hud.stamp('BETRAYAL');
         this.audio?.play('betrayal');
         this.world.flicker?.();
-        this.hud.toast(`<b>${cap(A)}</b> breaks its pact and attacks <b>${B}</b>!`, { kind: 'big', ms: 4200 });
+        const quip = generalSays(state, e.player, 'betray', { army: B });
+        this.hud.toast(`<b>${cap(A)}</b> breaks its pact and attacks <b>${B}</b>!${quip ? `<br><i>“${quip}”</i>` : ''}`, { kind: 'big', ms: 5200 });
         if (!this.instant) await wait(1.1);
+        break;
+      }
+      case 'worldEvent': {
+        this.applyWeather({ ...state, world: e, round: e.round });
+        this.audio?.play('turn');
         break;
       }
       case 'pactExpired':
@@ -204,9 +242,12 @@ export class Director {
       // svaret i luren på vårt samtal
       this.audio?.play('pickup');
       this.audio?.phoneVoice(2200);
+      const other = e.type === 'pact' ? e.b : e.to;
+      const bitter = e.type === 'declined' && state.players[other]?.grudges?.[from] != null;
+      const said = generalSays(state, other, e.type === 'pact' ? 'accept' : bitter ? 'betrayed' : 'decline', { army: FACTION[this.faction(state, from)].army });
       await reply(e.type === 'pact'
-        ? `“Agreed. No attacks between us until the end of ${monthOf(e.until)}.”`
-        : '“Out of the question.” <i>The line goes dead.</i>');
+        ? `“${said ?? 'Agreed.'}” <small>No attacks between us until the end of ${monthOf(e.until)}.</small>`
+        : `“${said ?? 'Out of the question.'}” <i>The line goes dead.</i>`, 3200, { st: state, p: other });
     }
     if (e.type === 'pact') {
       this.hud.stamp('PACT SIGNED', 'small');
@@ -256,6 +297,10 @@ export class Director {
     }
     const first = battles[0];
     const A = first.from, B = first.to;
+    if (!this.replaying) {
+      const vb = this.view;
+      this.lastBattle = { seq, state, pre: { [A]: { n: vb.armies[A], f: vb.owner[A] }, [B]: { n: vb.armies[B], f: vb.owner[B] } } };
+    }
     if (this.stats) {
       const losses = battles.reduce((n, b) => n + b.losses.a + b.losses.d, 0);
       this.stats.battles++; this.stats.rolls += battles.length;
@@ -263,8 +308,10 @@ export class Director {
       if (!this.stats.biggest || losses > this.stats.biggest.losses) this.stats.biggest = { losses, at: B, round: state.round };
     }
     const att = this.faction(state, first.player), def = this.faction(state, first.defender);
-    const instant = speed.factor >= 50;
-    const film = !instant && this.importance(seq, state) >= this.pace.film;
+    // i dimman syns inte strider där båda territorierna är dolda
+    const unseen = this.hidden(A) && this.hidden(B);
+    const instant = speed.factor >= 50 || unseen;
+    const film = !instant && (this.replaying || this.importance(seq, state) >= this.pace.film);
     const route = this.board.route(A, B);
     const staging = stagingPoint(route);
 
@@ -275,8 +322,7 @@ export class Director {
       if (conquer) {
         this.view.owner[B] = att;
         this.board.setOwner(B, att);
-        this.notes?.arrow(this.board.anchor(A), this.board.anchor(B), att);
-        this.aftermath(A, B, stagingPoint(route));
+        if (!this.replaying) { this.notes?.arrow(this.board.anchor(A), this.board.anchor(B), att); this.aftermath(A, B, stagingPoint(route)); }
         this.board.stacks[B].set(0, def);
         this.pending = { from: A, to: B, att, exp: null };
       } else this.board.stacks[B].set(last.armies.to, def);
@@ -335,7 +381,37 @@ export class Director {
     }
     for (const e of seq) {
       if (e.type === 'occupy') await this.occupy(e, state);
+      else if (this.replaying) continue;
       else if (e.type !== 'battle' && e.type !== 'conquer') await this.single(e, state);
+    }
+  }
+
+  // Repris av senaste slaget: garnisonerna ställs som före slaget och slaget spelas igen i filmtempo.
+  async replay() {
+    const lb = this.lastBattle;
+    if (!lb || this.busy) return;
+    this.busy = true; this.replaying = true;
+    const oldPace = this.paceName;
+    this.setPace('film');
+    this.hud.replayBanner?.(true);
+    try {
+      for (const [id, v] of Object.entries(lb.pre)) {
+        this.view.armies[id] = v.n; this.view.owner[id] = v.f;
+        this.board.setOwner(id, v.f);
+        await this.board.stacks[id].set(v.n, v.f);
+      }
+      const back = { pos: this.world.camera.position.clone(), target: this.world.controls.target.clone() };
+      await this.battle(lb.seq, lb.state);
+      await wait(0.8);
+      await this.rig.cut(back.pos, back.target, { fade: true, focus: 0 });
+      this.world.controls.enabled = true;
+    } finally {
+      this.pending = null;
+      this.replaying = false;
+      this.hud.replayBanner?.(false);
+      this.setPace(oldPace);
+      this.busy = false;
+      if (this.lastState) { this.reconcile(this.lastState); this.applyFog(this.lastState); }
     }
   }
 

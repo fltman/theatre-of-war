@@ -44,6 +44,15 @@ Konsolen: `window.TW` (world, board, rig, fx, hud, director, ui, props, dice, pr
 - `src/diplomacy.js` – telefondiplomatin i gränssnittet: växeln (ring upp och föreslå pakt), inkommande samtal, besked.
   Regin (`phoneCall`/`phoneAnswer`) flyttar kameran till telefonen, lyfter luren, slår numret, ringer; `director.localSeats`
   avgör vilka platser som sitter vid skärmen (lokalt: alla människor, online: den egna). Generalerna: `pactValue` i `ai.js`.
+- `src/warmenu.js` – krigsmenyn (≡ eller Esc): paus (`world.timeScale = 0`), klippboken hittills, repris (`director.replay()`),
+  fotoläge (`src/photo.js`), hjälp, ljudreglage (`audio.levels`: master/music/voices/effects), online-val, huvudmenyn.
+- Navigering: vänsterdrag flyttar, högerdrag vinklar, hjul/nyp zoomar, pilar/WASD flyttar, Q/E vrider, R = översikten.
+- Krigsdimma: `newGame({ fog })`, `visibleTo()`; regin döljer garnisoner (`Stack.setHidden`, flaggan "?") för den som tittar
+  (`director.viewerSeat`); servern redigerar läge och händelser (`server/fog.js`). Månadens händelse: `state.world`,
+  `canAttack`/`maxDice`, väder på kartan (`board.weather`), lappen under datumet (`hud.worldEvent`).
+- `src/generals.js` – sex fiktiva fältmarskalkar (porträtt i `public/img/generals/`, repliker); telefonkorten visar dem.
+  Svikna generaler har agg (`players[p].grudges[q] = runda`) och vägrar pakt med sveket (12/18 månader, försiktig aldrig).
+- `src/telegraph.js` – telegram mellan spelare online (fjärrskrivarremsa, formulär).
 - `src/game.js` – lokalt parti, sparas som frö + draglogg i localStorage (`tow.lastGame`). `src/ui.js` – spelarens klick/panel.
 - `src/audio.js` – syntetiska effekter (WebAudio), röstuppspelning med radiofilter (`speak`), loopar (`static`, `projector`).
 
@@ -58,6 +67,9 @@ kontinentgränser. Grannpar utan gemensam gräns blir sjövägar (närmaste punk
 `node tools/preview_map.mjs` ritar en kontrollbild.
 
 ## Fällor (upplevda)
+
+- Servertesterna kör `startServer({ aiThink: false })`: med framåtblicken hinner ett helt parti inte klart på 60 s när
+  alla testfiler går samtidigt.
 
 - d3 vill ha **medurs** yttre ringar; mapshaper skriver moturs (RFC 7946). Fel varv = "hela jorden utom formen" (alla
   territorier blev kartans rektangel). `rewind()` i build_map.

@@ -40,11 +40,12 @@ export class Online {
     this.backoff = 1000;
     // aktuellt parti
     this.code = null; this.seat = null; this.host = false; this.seq = 0; this.state = null; this.seats = []; this.gameStatus = null;
+    this.options = {}; this.telegrams = [];
   }
 
   // ---------------------------------------------------------------- händelser
 
-  /** on(typ, fn) -> avregistrering. Typer: status, welcome, game, start, events, seats, reject, error, resync. */
+  /** on(typ, fn) -> avregistrering. Typer: status, welcome, game, start, events, seats, reject, error, resync, telegram. */
   on(type, fn) {
     if (!this.handlers.has(type)) this.handlers.set(type, new Set());
     this.handlers.get(type).add(fn);
@@ -138,6 +139,7 @@ export class Online {
       case 'created':
       case 'game':
         this.code = m.code; this.seat = m.you.seat; this.host = m.you.host; this.seq = m.seq;
+        this.options = m.options ?? {}; this.telegrams = m.telegrams ?? [];
         this.state = m.state; this.seats = m.seats; this.gameStatus = m.status;
         break;
       case 'start':
@@ -154,7 +156,10 @@ export class Online {
         this.seats = m.seats;
         break;
       case 'left':
-        if (m.code === this.code) { this.code = null; this.seat = null; this.state = null; }
+        if (m.code === this.code) { this.code = null; this.seat = null; this.state = null; this.telegrams = []; }
+        break;
+      case 'telegram':
+        if (m.code === this.code && !this.telegrams.some((x) => x.id === m.id)) this.telegrams.push({ id: m.id, from: m.from, to: m.to, text: m.text, ts: m.ts });
         break;
     }
   }
@@ -170,6 +175,12 @@ export class Online {
   start() { this.send({ t: 'start', code: this.code }); }
   handover(seat) { this.send({ t: 'handover', code: this.code, seat }); }
   reclaim() { this.send({ t: 'reclaim', code: this.code }); }
+
+  /** Telegram till alla makter (to = null) eller en plats. Avvisas med OnlineError('rate-limited' | 'telegram-limit' | …). */
+  telegram(to, text) { return this.request({ t: 'telegram', code: this.code, to: to ?? null, text }); }
+
+  /** Min plats (som i `seats`) eller null för åskådare. */
+  get mySeat() { return this.seat === null ? null : this.seats[this.seat] ?? null; }
 
   // ---------------------------------------------------------------- partiet
 

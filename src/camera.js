@@ -17,6 +17,8 @@ export class CameraRig {
     const grab = () => { this.job++; this.flying = null; this.userHasControl = true; this.controls.enabled = true; this.world.setFocus(null, 0); };
     world.canvas.addEventListener('pointerdown', (e) => { if (e.button === 0 || e.button === 2) this.lastPointer = performance.now(); });
     this.controls.addEventListener('start', grab);
+    world.onUserCamera = () => { if (!this.userHasControl) grab(); };
+    world.onOverview = () => { grab(); this.overview(1.2); };
     world.addUpdater((dt) => this.update(dt));
   }
 

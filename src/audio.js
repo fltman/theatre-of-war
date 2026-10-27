@@ -26,6 +26,8 @@ export class Audio {
     this.sfx = ctx.createGain(); this.sfx.gain.value = 0.8; this.sfx.connect(this.bed);
     this.amb = ctx.createGain(); this.amb.gain.value = 0.35; this.amb.connect(this.bed);
     this.vox = ctx.createGain(); this.vox.connect(this.master);
+    this.mus = ctx.createGain(); this.mus.connect(this.bed);           // musiken (duckas med effekterna)
+    this.applyLevels();
     this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 512;
     this.vox.connect(this.analyser);
     this.levelBuf = new Float32Array(this.analyser.fftSize);
@@ -46,10 +48,33 @@ export class Audio {
     return this.smoothed;
   }
 
+  // Ljudnivåer 0…1 per kanal, sparas i webbläsaren.
+  get levels() {
+    if (!this._levels) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem('tow.levels')); } catch { /* */ }
+      this._levels = { master: 0.9, music: 0.8, voices: 1, effects: 0.8, ...saved };
+    }
+    return this._levels;
+  }
+  setLevel(k, v) {
+    this.levels[k] = v;
+    try { localStorage.setItem('tow.levels', JSON.stringify(this.levels)); } catch { /* */ }
+    this.applyLevels();
+  }
+  applyLevels() {
+    if (!this.ctx) return;
+    const L = this.levels, t = this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(this.muted ? 0 : L.master, t, 0.05);
+    this.mus.gain.setTargetAtTime(L.music, t, 0.05);
+    this.vox.gain.setTargetAtTime(L.voices, t, 0.05);
+    this.sfx.gain.setTargetAtTime(L.effects, t, 0.05);
+  }
+
   setMuted(m) {
     this.muted = m;
     try { localStorage.setItem('tow.muted', m ? '1' : '0'); } catch { /* */ }
-    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ctx.currentTime, 0.05);
+    this.applyLevels();
   }
 
   makeNoise(sec, brown = false) {

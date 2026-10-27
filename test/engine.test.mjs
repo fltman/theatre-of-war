@@ -155,3 +155,73 @@ test('generalerna sluter, håller och ibland sviker pakter – utan otillåtna d
   console.log('diplomati:', JSON.stringify(counts));
   assert.ok(counts.proposal > 0 && counts.pact > 0, 'generalerna ska ringa och ibland komma överens');
 });
+
+// ------------------------------------------------------------------ månadens händelse och krigsdimma
+
+import { canAttack, maxDice, visibleTo, WORLD_EVENTS } from '../shared/engine.js';
+import { bySea } from '../shared/map.js';
+
+test('världshändelser dras, följer reglerna och generalerna bryter aldrig mot dem', () => {
+  const seen = new Set();
+  for (const seed of [41, 42, 43, 44]) {
+    let { state } = newGame({ seed, players: ['red', 'blue', 'green', 'yellow'].map((f) => ({ faction: f })) });
+    for (let i = 0; i < 2500 && state.phase !== 'over'; i++) {
+      const a = decide(state, { think: false });
+      const r = apply(state, a);
+      for (const e of r.events) {
+        if (e.type === 'worldEvent') { seen.add(e.id); assert.equal(e.round, r.state.round); }
+        if (e.type === 'battle') {
+          const w = state.world?.round === state.round ? state.world : null;
+          if (w?.id === 'gales') assert.ok(!bySea(e.from, e.to), 'anfall över havet under storm');
+          assert.ok(e.dice.a.length <= maxDice(state, e.from, e.to));
+        }
+        if (e.type === 'income' && state.world) assert.equal(typeof e.world, 'number');
+      }
+      state = r.state;
+    }
+  }
+  assert.ok(seen.size >= 5, `bara ${[...seen]} dök upp`);
+  assert.deepEqual([...seen].filter((x) => !WORLD_EVENTS.includes(x)), []);
+});
+
+test('storm stoppar anfall över havet; hård vinter ger högst två tärningar', () => {
+  let { state } = newGame({ seed: 2, players: ['red', 'blue'].map((f) => ({ faction: f })) });
+  state.owner.great_britain = 0; state.owner.france = 1; state.armies.great_britain = 10;
+  state.round = 3; state.world = { id: 'gales', round: 3 };
+  assert.equal(canAttack(state, 'great_britain', 'france'), false);
+  state.world = { id: 'winter', round: 3 };
+  assert.equal(maxDice(state, 'ukraine', 'ural'), 2);
+  assert.equal(maxDice(state, 'ural', 'ukraine'), 3);
+});
+
+test('krigsdimma: man ser egna, grannarnas och partners territorier', () => {
+  let { state } = newGame({ seed: 8, players: ['red', 'blue', 'green'].map((f) => ({ faction: f })), fog: true });
+  const v = visibleTo(state, 0);
+  for (const id of IDS) if (state.owner[id] === 0) assert.ok(v.has(id));
+  assert.ok(v.size < IDS.length, 'något ska vara dolt');
+  state.pacts = [{ a: 0, b: 1, made: 1, until: 4 }];
+  const v2 = visibleTo(state, 0);
+  for (const id of IDS) if (state.owner[id] === 1) assert.ok(v2.has(id), 'partnerns territorier syns');
+  assert.equal(visibleTo({ ...state, fog: false }, 0).size, IDS.length);
+});
+
+test('den svikne minns: Röd vägrar ny pakt med den som svek', async () => {
+  const { decide: think } = await import('../shared/ai.js');
+  for (const style of ['aggressive', 'strategist', 'cautious']) {
+    let { state } = newGame({ seed: 4, players: [{ faction: 'blue', kind: 'human' }, { faction: 'red', ai: style }] });
+    while (state.turn !== 0) state = apply(state, state.phase === 'reinforce' ? { type: 'place', territory: IDS.find((id) => state.owner[id] === state.turn), n: state.pending } : { type: 'endTurn' }).state;
+    state = apply(state, { type: 'propose', partner: 1 }).state;
+    state = apply(state, { type: 'answer', accept: true }).state;
+    const from = IDS.find((id) => state.owner[id] === 0 && TERRITORY[id].neighbors.some((n) => state.owner[n] === 1));
+    const to = TERRITORY[from].neighbors.find((n) => state.owner[n] === 1);
+    state = apply(state, { type: 'place', territory: from, n: state.pending }).state;
+    state = apply(state, { type: 'attack', from, to, dice: 1 }).state;            // svek
+    assert.equal(state.players[1].grudges[0], state.round);
+    // nästa månad: blå ringer igen
+    while (!(state.turn === 0 && state.round > 1 && state.phase === 'reinforce')) {
+      state = apply(state, state.phase === 'reinforce' ? { type: 'place', territory: IDS.find((id) => state.owner[id] === state.turn), n: state.pending } : state.phase === 'occupy' ? { type: 'occupy', n: state.occupy.min } : { type: 'endTurn' }).state;
+    }
+    state = apply(state, { type: 'propose', partner: 1 }).state;
+    assert.deepEqual(think(state), { type: 'answer', accept: false }, `${style} ska vägra`);
+  }
+});

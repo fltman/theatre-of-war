@@ -10,6 +10,7 @@ export class OnlineGame {
   constructor({ director, ui, hud, net, onEnd }) {
     Object.assign(this, { director, ui, hud, net, onEnd });
     director.localSeats = net.seat == null ? new Set() : new Set([net.seat]);
+    this.kinds = net.seats.map((s) => s.kind);
     this.chain = Promise.resolve();
     this.asking = false;
     this.stopped = false;
@@ -17,9 +18,24 @@ export class OnlineGame {
       net.on('start', (m) => this.enqueue(() => this.started(m))),
       net.on('events', (m) => this.enqueue(() => this.director.play(m.events, m.state))),
       net.on('resync', (m) => this.enqueue(() => this.resync(m))),
-      net.on('seats', () => this.hud.updateRoster?.(this.net.state ?? this.director.lastState ?? { players: [], owner: {} })),
+      net.on('seats', (m) => this.seatsChanged(m.seats)),
       net.on('status', (s) => this.hud.toast(s === 'online' ? 'Wire restored' : s === 'offline' ? 'Wire cut — reconnecting…' : 'Connecting…', { ms: 2000 })),
     ];
+  }
+
+  // Platserna har ändrats: överlämning till generalerna avbryter en väntande order, återtagande frågar igen.
+  seatsChanged(seats) {
+    const before = this.kinds ?? seats.map((s) => s.kind);
+    this.kinds = seats.map((s) => s.kind);
+    this.hud.updateRoster?.(this.net.state ?? this.director.lastState ?? { players: [], owner: {} });
+    seats.forEach((s, i) => {
+      if (before[i] === s.kind) return;
+      const f = FACTION[s.faction].name;
+      this.hud.toast(s.kind === 'ai' ? `${f}: command passes to the generals` : `${f}: ${esc(s.name)} retakes command`);
+    });
+    const mine = this.net.seat !== null ? seats[this.net.seat] : null;
+    if (mine?.kind === 'ai' && this.asking) this.ui.cancel();
+    this.enqueue(() => {});
   }
 
   enqueue(fn) {
@@ -56,6 +72,29 @@ export class OnlineGame {
   }
 
   stop() { this.stopped = true; for (const off of this.offs) off(); this.ui.cancel(); }
+}
+
+// Krigsmenyns poster för ett onlineparti (räknas fram när menyn öppnas): överlämna/återta befälet,
+// värdens överlämning av frånkopplade spelare, länk för åskådare. [{ label, action }]
+export function onlineMenuItems(game) {
+  const net = game?.net;
+  if (!net?.code || net.gameStatus !== 'active') return [];
+  const items = [];
+  const mine = net.mySeat;
+  if (mine && mine.kind === 'human') {
+    items.push({ label: 'Hand over to the generals', action: () => net.handover(net.seat) });
+  } else if (mine && mine.kind === 'ai' && mine.claimed) {
+    items.push({ label: 'Retake command', action: () => net.reclaim() });
+  }
+  if (net.host) {
+    for (const s of net.seats) {
+      if (s.seat === net.seat || s.kind !== 'human' || !s.claimed || s.online) continue;
+      if (net.state?.players?.[s.seat]?.alive === false) continue;
+      items.push({ label: `Hand ${FACTION[s.faction].name} (${s.name}, away) to the generals`, action: () => net.handover(s.seat) });
+    }
+  }
+  items.push({ label: 'Copy spectator link', action: () => navigator.clipboard?.writeText(inviteLink(net.code, 'watch')) });
+  return items;
 }
 
 // ------------------------------------------------------------------ lobbyn
@@ -100,6 +139,7 @@ export class LobbyUI {
       </div>
       <h3>Open wars</h3><div class="list" data-l="open"><p class="muted">Contacting headquarters…</p></div>
       <h3>Your wars</h3><div class="list" data-l="mine"></div>
+      <h3>Wars in progress</h3><div class="list" data-l="active"></div>
       <button data-a="back" class="link">← Back</button>`);
     m.querySelector('[data-a=back]').onclick = () => this.back();
     const nameIn = m.querySelector('[data-k=name]');
@@ -123,6 +163,10 @@ export class LobbyUI {
       const row = (g, btn) => `<div class="game"><span class="code">${g.code}</span><span class="chips">${g.seats.map((s) => `<i class="chip ${s.open ? 'open' : ''}" style="--c:${FACTION[s.faction].paint}" title="${esc(s.name ?? s.kind)}"></i>`).join('')}</span><span class="st">${g.status === 'lobby' ? 'mustering' : g.status === 'over' ? 'over' : `month ${g.round}`}${g.yourTurn ? ' <b class="stamp">YOUR MOVE</b>' : ''}</span>${btn}</div>`;
       m.querySelector('[data-l=open]').innerHTML = lobby.open.length ? lobby.open.map((g) => row(g, `<button data-j="${g.code}">Join</button>`)).join('') : '<p class="muted">No wars are mustering right now.</p>';
       m.querySelector('[data-l=mine]').innerHTML = lobby.mine.length ? lobby.mine.map((g) => row(g, `<button data-o="${g.code}">${g.status === 'over' ? 'Review' : 'Resume'}</button>`)).join('') : '<p class="muted">None yet.</p>';
+      const mineCodes = new Set(lobby.mine.map((g) => g.code));
+      const active = (lobby.active ?? []).filter((g) => !mineCodes.has(g.code));
+      m.querySelector('[data-l=active]').innerHTML = active.length ? active.map((g) => row(g, `<button data-w="${g.code}">Watch</button>`)).join('') : '<p class="muted">The world is quiet.</p>';
+      m.querySelectorAll('[data-w]').forEach((b) => (b.onclick = () => this.watch(b.dataset.w)));
       m.querySelectorAll('[data-j]').forEach((b) => (b.onclick = async () => { await setName(); this.join(b.dataset.j); }));
       m.querySelectorAll('[data-o]').forEach((b) => (b.onclick = () => this.open(b.dataset.o)));
     } catch (e) { this.error(m, e); }
@@ -136,6 +180,7 @@ export class LobbyUI {
       <label class="field">Your colours <span class="factions">${FACTIONS.map((f, i) => `<button class="chipbtn ${i === 1 ? 'on' : ''}" data-f="${f.id}" style="--c:${f.paint}" title="${f.name}"></button>`).join('')}</span></label>
       <label class="field">Powers at war <select data-k="n">${[2, 3, 4, 5, 6].map((n) => `<option ${n === 4 ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="field">Seats for people <select data-k="h">${[1, 2, 3, 4, 5, 6].map((n) => `<option ${n === 2 ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="field">Fog of war <input type="checkbox" data-k="fog" style="width:20px;height:20px;accent-color:var(--red)"></label>
       <p class="muted">Remaining powers are played by the generals. Empty seats are handed to the generals when you start.</p>
       <div class="choices"><button data-a="go" class="primary">Issue the orders</button></div>
       <button data-a="back" class="link">← Back</button>`);
@@ -147,7 +192,8 @@ export class LobbyUI {
       const h = Math.min(n, +m.querySelector('[data-k=h]').value);
       const order = [mine, ...FACTIONS.map((f) => f.id).filter((f) => f !== mine)].slice(0, n);
       const seats = order.map((f, i) => (i < h ? { kind: 'human', faction: f } : { kind: 'ai', faction: f, ai: STYLES[i % 3] }));
-      try { const g = await this.net.create({ seats, seat: 0 }); this.muster(g); } catch (e) { this.error(m, e); }
+      const fog = m.querySelector('[data-k=fog]').checked;
+      try { const g = await this.net.create({ seats, seat: 0, options: { fog } }); this.muster(g); } catch (e) { this.error(m, e); }
     };
   }
 
@@ -173,7 +219,7 @@ export class LobbyUI {
     const link = inviteLink(g.code);
     const m = this.show(`
       <h2>Mustering</h2>
-      <p class="sub">War code <b class="code">${g.code}</b></p>
+      <p class="sub">War code <b class="code">${g.code}</b>${g.options?.fog ? ' · <b class="stamp">FOG OF WAR</b>' : ''}</p>
       <div class="invite"><input readonly value="${link}"><button data-a="copy">Copy</button></div>
       <div class="list" data-l="seats"></div>
       <div class="choices">${g.you.host ? '<button data-a="start" class="primary">Start the war</button>' : '<p class="muted">Waiting for the host to start the war…</p>'}</div>

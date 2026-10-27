@@ -1,7 +1,7 @@
 // Spelreglerna (klassisk Risk). Rena funktioner: apply(state, action) -> { state, events }. Muterar aldrig indata.
 // Tärningar och kortlek kommer ur den seedade slumpen i state.rng, så samma frö + samma dragföljd ger samma krig
 // (servern sparar bara fröet och dragen; repriser och journalfilm räknas fram ur loggen).
-import { TERRITORIES, TERRITORY, CONTINENTS, CONTINENT, CARDS, IDS } from './map.js';
+import { TERRITORIES, TERRITORY, CONTINENTS, CONTINENT, CARDS, IDS, bySea } from './map.js';
 import { rand, die, shuffle } from './rng.js';
 
 export const START_ARMIES = { 2: 40, 3: 35, 4: 30, 5: 25, 6: 20 };
@@ -13,7 +13,7 @@ const clone = (s) => structuredClone(s);
 
 // ------------------------------------------------------------------ nytt parti
 
-export function newGame({ seed = Date.now() >>> 0, players, setup = 'random', victory = 'world' }) {
+export function newGame({ seed = Date.now() >>> 0, players, setup = 'random', victory = 'world', fog = false }) {
   if (!players || players.length < 2 || players.length > 6) fail('players');
   const st = {
     v: 1, seed: seed >>> 0, rng: seed >>> 0,
@@ -21,6 +21,8 @@ export function newGame({ seed = Date.now() >>> 0, players, setup = 'random', vi
     owner: {}, armies: {},
     turn: 0, round: 1, phase: 'reinforce', pending: 0, conquered: false, occupy: null, mustTrade: false,
     deck: [], discard: [], trades: 0, winner: null, victory,
+    fog: !!fog,                // krigsdimma (en vy; motorn räknar som vanligt), se visibleTo
+    world: null,               // månadens händelse { id, round, ... } eller null
     pacts: [],                 // [{ a, b, made, until }]: inga anfall mellan a och b t.o.m. runda `until`
     proposal: null,            // { from, to, months }: väntar på svar från `to`
   };
@@ -47,10 +49,73 @@ export const owned = (st, p) => IDS.filter((id) => st.owner[id] === p);
 export const ownsContinent = (st, p, c) => CONTINENT[c].territories.every((id) => st.owner[id] === p);
 
 export function income(st, p) {
-  const n = owned(st, p).length;
+  const mine = owned(st, p);
+  const n = mine.length;
   const continents = CONTINENTS.filter((c) => ownsContinent(st, p, c.id)).map((c) => ({ id: c.id, bonus: c.bonus }));
   const base = Math.max(3, Math.floor(n / 3));
-  return { total: base + continents.reduce((s, c) => s + c.bonus, 0), territories: n, continents };
+  let total = base + continents.reduce((s, c) => s + c.bonus, 0);
+  // månadens händelse
+  let world = 0;
+  const w = st.world;
+  if (w && w.round === st.round) {
+    if (w.id === 'harvest' && mine.some((t) => TERRITORY[t].continent === w.continent)) world = 2;
+    if (w.id === 'oil' && st.owner[w.territory] === p) world = 4;
+    if (w.id === 'volunteers') world = 2;
+    if (w.id === 'strike' && w.player === p) world = -Math.min(3, total - 3);
+  }
+  total += world;
+  return { total, territories: n, continents, world };
+}
+
+// ------------------------------------------------------------------ månadens händelse
+
+const COLD = new Set(['ural', 'siberia', 'yakutsk', 'irkutsk', 'kamchatka', 'mongolia']);
+export const WORLD_EVENTS = ['winter', 'heat', 'gales', 'harvest', 'strike', 'oil', 'volunteers'];
+const live = (st) => (st.world && st.world.round === st.round ? st.world : null);
+
+// Hur många tärningar angriparen högst får slå (vinter i öster, hetta i Afrika: två).
+export function maxDice(st, from, to) {
+  const w = live(st);
+  if (w?.id === 'winter' && COLD.has(to)) return 2;
+  if (w?.id === 'heat' && TERRITORY[to].continent === 'africa') return 2;
+  return 3;
+}
+
+// Får from anfalla to just nu? (granne, fiende, minst två arméer, inte över havet under storm)
+export function canAttack(st, from, to) {
+  if (!TERRITORY[from]?.neighbors.includes(to)) return false;
+  if (st.owner[from] === st.owner[to] || st.armies[from] < 2) return false;
+  if (live(st)?.id === 'gales' && bySea(from, to)) return false;
+  return true;
+}
+
+function drawWorld(st, ev) {
+  st.world = null;
+  if (st.round < 2 || rand(st) > 0.55) return;
+  const id = WORLD_EVENTS[Math.floor(rand(st) * WORLD_EVENTS.length)];
+  const w = { id, round: st.round };
+  if (id === 'harvest') w.continent = CONTINENTS[Math.floor(rand(st) * CONTINENTS.length)].id;
+  if (id === 'oil') w.territory = rand(st) < 0.6 ? 'middle_east' : 'venezuela';
+  if (id === 'strike') {
+    const alive = st.players.map((_, i) => i).filter((i) => st.players[i].alive);
+    w.player = alive.sort((a, b) => owned(st, b).length - owned(st, a).length)[0];
+  }
+  st.world = w;
+  ev.push({ type: 'worldEvent', ...w });
+}
+
+// ------------------------------------------------------------------ krigsdimma
+
+// Territorier vars arméer `seat` ser: egna, grannarnas och pakt-partners. Utan dimma: alla.
+export function visibleTo(st, seat) {
+  if (!st.fog || seat == null) return new Set(IDS);
+  const out = new Set();
+  const allies = new Set((st.pacts ?? []).filter((x) => x.a === seat || x.b === seat).map((x) => (x.a === seat ? x.b : x.a)));
+  for (const t of IDS) {
+    const o = st.owner[t];
+    if (o === seat || allies.has(o)) { out.add(t); for (const n of TERRITORY[t].neighbors) out.add(n); }
+  }
+  return out;
 }
 
 export function isSet(ids) {
@@ -170,16 +235,20 @@ export function apply(state, action) {
       if (!TERRITORY[from]?.neighbors.includes(to)) fail('not-adjacent');
       if (st.owner[to] === p) fail('own-territory');
       if (st.armies[from] < 2) fail('too-few');
+      if (!canAttack(st, from, to)) fail('gales');
       const victim = st.owner[to];
       const broken = pactBetween(st, p, victim);
       if (broken) {
         st.pacts = st.pacts.filter((x) => x !== broken);
         me.betrayals = (me.betrayals ?? 0) + 1;
+        // den svikne minns: vem och när (generalerna och tidningarna läser det)
+        st.players[victim].grudges = { ...(st.players[victim].grudges ?? {}), [p]: st.round };
         ev.push({ type: 'betrayal', player: p, victim, made: broken.made });
       }
       const stopAt = Math.max(1, action.type === 'blitz' ? (action.stopAt ?? 1) : 1);
       do {
-        const dice = action.type === 'attack' ? Math.min(action.dice ?? 3, 3, st.armies[from] - 1) : Math.min(3, st.armies[from] - 1);
+        const cap = maxDice(st, from, to);
+        const dice = action.type === 'attack' ? Math.min(action.dice ?? cap, cap, st.armies[from] - 1) : Math.min(cap, st.armies[from] - 1);
         if (dice < 1) fail('dice');
         roll(st, ev, from, to, dice);
         if (st.phase !== 'attack') break;                 // erövrat (occupy) eller över
@@ -298,6 +367,7 @@ function endTurn(st, ev) {
       st.round++;
       for (const x of (st.pacts ?? []).filter((x) => x.until < st.round)) ev.push({ type: 'pactExpired', a: x.a, b: x.b });
       st.pacts = (st.pacts ?? []).filter((x) => x.until >= st.round);
+      drawWorld(st, ev);
     }
   } while (!st.players[n].alive);
   st.turn = n;

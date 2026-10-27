@@ -198,7 +198,7 @@ export const FALL = {
   ],
   numbers: [
     (c) => (c.lossA + c.lossD >= 3 ? `The fighting was savage. According to ${WIRE.name}, ${c.F.plural} lost ${divs(c.lossA)} in the assault, while ${c.D.plural} lost ${divs(c.lossD)}.` : null),
-    (c) => (c.startA > 0 ? `The blow fell from ${c.from.ref}, where ${c.F.army} had quietly massed ${divs(c.startA)}. ${c.startD === 1 ? `Facing them was a single ${c.D.adj} division.` : `Facing them were ${num(c.startD)} ${c.D.adj} divisions.`}` : null),
+    (c) => (c.startA > 0 && c.startD > 0 ? `The blow fell from ${c.from.ref}, where ${c.F.army} had quietly massed ${divs(c.startA)}. ${c.startD === 1 ? `Facing them was a single ${c.D.adj} division.` : `Facing them were ${num(c.startD)} ${c.D.adj} divisions.`}` : null),
     (c) => (c.startA > 0 && c.lossA === 0 ? `Remarkably, ${c.F.army} reports no losses at all. The ${c.D.adj} defenders are said to have “mislaid their ammunition.”` : null),
   ],
   quote: [
@@ -455,6 +455,65 @@ export const DIPLO_WIRE = {
     (c) => `GENEVA (${WIRE.short}) \u2014 The pact between ${c.A.army} and ${c.B.army} has expired.`,
     (c) => `GENEVA (${WIRE.short}) \u2014 Peace between ${c.A.army} and ${c.B.army} ran out at midnight. Both sides are said to be oiling their guns.`,
   ],
+};
+
+// ---------------------------------------------------------------- månadens världshändelse
+// c.W = { id, C (kontinent), T (territorium), S (drabbad makt), holder (oljans ägare) }. RULE(c) är regeln i klartext –
+// tidningen är där spelaren får veta den, så den står alltid ordagrant och sant.
+
+export const EAST = ['the Ural', 'Siberia', 'Yakutsk', 'Irkutsk', 'Kamchatka', 'Mongolia'];
+
+export const WORLD_RULE = {
+  winter: () => `Attacks into the frozen east — ${EAST.slice(0, -1).join(', ')} and ${EAST[EAST.length - 1]} — roll no more than two dice this month.`,
+  heat: () => 'Attacks into Africa roll no more than two dice this month.',
+  gales: () => 'No attacks may be made across the sea lanes this month.',
+  harvest: (c) => `Every power holding at least one territory in ${c.W.C.name} receives two extra divisions this month.`,
+  strike: (c) => `${c.W.S.Army} receives three fewer divisions this month, but never fewer than three.`,
+  oil: (c) => `Whoever holds ${c.W.T.ref} receives four extra divisions this month.${c.W.holder ? ` At present that is ${c.W.holder.army}.` : ''}`,
+  volunteers: () => 'Every power receives two extra divisions this month.',
+};
+
+export const WORLD = {
+  winter: {
+    headline: ['General Winter Arrives', 'The Big Freeze', 'Frost Grips the East'],
+    deck: ['Offensives stall in Siberia as the thermometer plunges', 'Tanks freeze to the ground from the Urals to Kamchatka'],
+    body: ['Temperatures in the east have fallen to levels not seen in living memory. Engines will not start, rifles will not fire, and the soup freezes before it reaches the front.'],
+  },
+  heat: {
+    headline: ['Heat Wave Grips Africa', 'Africa Bakes', 'The Sun Halts the Armies'],
+    deck: ['Water rationed at the front; offensives slow to a crawl', 'Thermometers burst in the Sahara'],
+    body: ['A heat wave of extraordinary severity has settled over Africa. Men march at night and sleep by day, when they can sleep at all.'],
+  },
+  gales: {
+    headline: ['Gales Close the Sea Lanes', 'Storms Lash the Oceans', 'No Ship Can Sail'],
+    deck: ['Troopships ordered to stay in port as the worst storms in memory sweep the seas', 'Every crossing cancelled until further notice'],
+    body: ['The admiralties of every power have ordered their ships to remain in harbor. Waves forty feet high are reported in the North Atlantic.'],
+  },
+  harvest: {
+    headline: [(c) => `Bumper Harvest in ${c.W.C.name}`, (c) => `Granaries Overflow in ${c.W.C.name}`],
+    deck: ['Fresh divisions raised on full stomachs, say the quartermasters', (c) => `Bread for the armies of every power in ${c.W.C.name}`],
+    body: [(c) => `The fields of ${c.W.C.name} have yielded the richest harvest in a generation. Every army with a foothold on the continent will eat well, and recruit accordingly.`],
+  },
+  strike: {
+    headline: [(c) => `Munitions Strike Cripples the ${c.W.S.armyBare}`, (c) => `Factories Idle: ${c.W.S.armyBare} Short of Shells`],
+    deck: ['Workers down tools as the war’s largest army runs short of everything'],
+    body: [(c) => `Production in the munitions works of ${c.W.S.army} has come to a standstill. The strikers demand better pay, shorter hours and, according to one placard, “less war.”`],
+  },
+  oil: {
+    headline: [(c) => `Oil Struck in ${c.W.T.name}`, (c) => `Black Gold in ${c.W.T.name}!`],
+    deck: [(c) => `Gushers ${c.W.T.place}; whoever holds the fields stands to gain four divisions`],
+    body: [(c) => `Engineers drilling ${c.W.T.place} have struck oil in quantities that, in the words of one geologist, “will change the war.”`],
+  },
+  volunteers: {
+    headline: ['Volunteers Flock to the Colors', 'Recruiting Offices Overwhelmed'],
+    deck: ['A wave of enlistment on every side — every army gains two divisions'],
+    body: ['From farm and factory, young men are queuing at the recruiting offices of every power. Several offices have run out of forms.'],
+  },
+  quote: [
+    '“The weather is neutral,” said a staff officer. “Which is more than can be said for anyone else.”',
+    '“We will adapt our plans accordingly,” said a spokesman, adapting nothing.',
+  ],
+  kicker: ['This Month', 'The World Situation', 'Notice to All Commanders'],
 };
 
 // ---------------------------------------------------------------- spalter och annonser

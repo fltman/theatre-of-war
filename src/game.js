@@ -28,7 +28,7 @@ export class LocalGame {
   start(config) {
     this.config = config;
     const seed = config.seed ?? (Math.random() * 2 ** 32) >>> 0;
-    const r = newGame({ seed, players: config.players });
+    const r = newGame({ seed, players: config.players, fog: !!config.fog });
     this.state = r.state;
     this.log = { config: { ...config, seed }, actions: [] };
     this.director.setup(this.state);
@@ -38,7 +38,7 @@ export class LocalGame {
   }
 
   resume(saved) {
-    const r = newGame({ seed: saved.config.seed, players: saved.config.players });
+    const r = newGame({ seed: saved.config.seed, players: saved.config.players, fog: !!saved.config.fog });
     let st = r.state;
     for (const a of saved.actions) st = apply(st, a).state;
     this.state = st;

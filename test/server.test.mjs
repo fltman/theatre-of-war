@@ -9,7 +9,7 @@ import WebSocket from 'ws';
 import { startServer } from '../server/index.js';
 import { decide } from '../shared/ai.js';
 import { actor } from '../shared/engine.js';
-import { IDS } from '../shared/map.js';
+import { IDS, TERRITORY } from '../shared/map.js';
 
 const dir = mkdtempSync(join(tmpdir(), 'tow-'));
 const quiet = () => {};
@@ -17,7 +17,8 @@ const fast = { bucket: 1e9, refill: 1e9 };   // AI-styrda "människor" spelar sn
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 // Allt som öppnas stängs efter varje test, även när testet fallerar (annars hänger node --test kvar).
 const servers = new Set(), clients = new Set();
-async function serve(opts) { const s = await startServer(opts); servers.add(s); const close = s.close; s.close = () => { servers.delete(s); return close(); }; return s; }
+// protokollet testas, inte generalernas skärpa: snabba regelbaserade beslut
+async function serve(opts) { const s = await startServer({ aiThink: false, ...opts }); servers.add(s); const close = s.close; s.close = () => { servers.delete(s); return close(); }; return s; }
 test.afterEach(async () => {
   for (const c of clients) c.ws.terminate();
   clients.clear();
@@ -71,11 +72,13 @@ class Client {
 }
 
 // Styr en människoplats med AI:n (på den offentliga vyn av tillståndet, som en riktig klient har).
-function autopilot(c, code, seat) {
+// truth: () => ({ state, seq }) ger AI:n serverns fulla läge (krigsdimma: den offentliga vyn har null-arméer).
+function autopilot(c, code, seat, truth = null) {
   let sent = -1, last = null, kind = 'human', on = true;
   const go = () => {
     if (!on || !last || kind !== 'human') return;
-    const { state, seq } = last;
+    let { state, seq } = last;
+    if (truth) { const t = truth(); if (t.seq !== seq) return; state = t.state; }
     if (state.phase === 'over' || actor(state) !== seat || sent === seq) return;   // svarar också på paktförslag
     sent = seq;
     c.send({ t: 'act', code, seq, action: decide(state) });
@@ -366,4 +369,182 @@ test('klientbiblioteket src/online.js: anslut, skapa, spela, återanslut efter a
   const moves = await net.history(0, 5);
   assert.equal(moves.length, 5);
   net.close();
+});
+
+test('telegram: till alla, privat, ransonering, åskådare, efter återanslutning', async () => {
+  const srv = await serve({ port: 0, dbPath: join(dir, 'tg.db'), aiDelay: 0, log: quiet, rate: fast, telegramGap: 40, telegramMax: 3 });
+  const A = await Client.connect(srv.port, { name: 'Ike' });
+  let B = await Client.connect(srv.port, { name: 'Monty' });
+  let C = await Client.connect(srv.port, { name: 'Press' });
+  const { code } = await A.request({ t: 'create', seats: [{ kind: 'human', faction: 'red' }, { kind: 'human', faction: 'blue' }, { kind: 'ai', faction: 'green' }] });
+  await B.request({ t: 'join', code });
+  await C.request({ t: 'watch', code });
+  const pause = () => new Promise((r) => setTimeout(r, 60));
+
+  const sent = await A.request({ t: 'telegram', code, to: null, text: '  stop at once\n\u0007STOP  ' });
+  assert.equal(sent.t, 'sent');
+  const [tb, tc, ta] = await Promise.all([B, C, A].map((x) => x.wait((m) => m.t === 'telegram' && m.id === sent.id)));
+  assert.equal(tb.text, 'stop at once STOP');
+  assert.equal(tb.from, 0);
+  assert.equal(tb.to, null);
+  assert.equal(tc.text, tb.text);
+  assert.equal(ta.id, sent.id);
+
+  const busy = await A.request({ t: 'telegram', code, to: 1, text: 'TOO SOON' });
+  assert.equal(busy.code, 'rate-limited');
+  await pause();
+  const priv = await A.request({ t: 'telegram', code, to: 1, text: 'x'.repeat(200) });
+  const pb = await B.wait((m) => m.t === 'telegram' && m.id === priv.id);
+  assert.equal(pb.text.length, 140);
+  assert.equal(pb.to, 1);
+  await C.request({ t: 'ping' });                       // allt som skulle komma till C har kommit
+  assert.ok(!C.msgs.some((m) => m.t === 'telegram' && m.id === priv.id), 'åskådaren ska inte se privata telegram');
+
+  await pause();
+  assert.equal((await A.request({ t: 'telegram', code, to: null, text: 'THIRD' })).t, 'sent');
+  await pause();
+  assert.equal((await A.request({ t: 'telegram', code, to: null, text: 'FOURTH' })).code, 'telegram-limit');
+  assert.equal((await C.request({ t: 'telegram', code, to: null, text: 'HELLO' })).code, 'spectator');
+  assert.equal((await B.request({ t: 'telegram', code, to: 1, text: 'ME' })).code, 'bad-request');
+  assert.equal((await B.request({ t: 'telegram', code, to: 7, text: 'NOBODY' })).code, 'bad-request');
+  assert.equal((await B.request({ t: 'telegram', code, to: null, text: '   ' })).code, 'bad-request');
+
+  // efter återanslutning: telegrammen ligger i partiet, privata bara hos avsändare och mottagare
+  const tokenB = B.token, tokenC = C.token;
+  await B.close(); await C.close();
+  B = await Client.connect(srv.port, { token: tokenB });
+  C = await Client.connect(srv.port, { token: tokenC });
+  const sb = await B.request({ t: 'open', code });
+  const sc = await C.request({ t: 'watch', code });
+  assert.deepEqual(sb.telegrams.map((x) => x.text), ['stop at once STOP', 'x'.repeat(140), 'THIRD']);
+  assert.deepEqual(sc.telegrams.map((x) => x.text), ['stop at once STOP', 'THIRD']);
+});
+
+test('lobbyn listar pågående krig att titta på', async () => {
+  const srv = await serve({ port: 0, dbPath: join(dir, 'act.db'), aiDelay: 50, log: quiet, rate: fast });
+  const A = await Client.connect(srv.port);
+  const X = await Client.connect(srv.port);
+  const running = await A.request({ t: 'create', seats: [{ kind: 'human', faction: 'red' }, { kind: 'ai', faction: 'blue' }] });
+  const waiting = await A.request({ t: 'create', seats: [{ kind: 'human', faction: 'red' }, { kind: 'human', faction: 'blue' }] });
+  const film = await A.request({ t: 'create', seat: null, seats: [{ kind: 'ai', faction: 'red' }, { kind: 'ai', faction: 'blue' }] });
+  A.send({ t: 'start', code: running.code });
+  A.send({ t: 'start', code: film.code });
+  await A.wait((m) => m.t === 'start' && m.code === running.code);
+  const l = await X.request({ t: 'list' });
+  const codes = l.active.map((g) => g.code);
+  assert.ok(codes.includes(running.code), 'pågående krig med en människa');
+  assert.ok(!codes.includes(waiting.code), 'mönstrande krig hör till open');
+  assert.ok(!codes.includes(film.code), 'krig med bara generaler listas inte');
+  assert.ok(l.open.some((g) => g.code === waiting.code));
+  const one = l.active.find((g) => g.code === running.code);
+  assert.equal(one.status, 'active');
+  assert.equal(one.you, null);
+});
+
+// ------------------------------------------------------------------ krigsdimma
+
+// Oberoende av servern: vad en plats får se enligt CONTRACT.md (egna + grannar + pakt-partners; åskådare inget;
+// allt när kriget är slut). null = allt.
+function seen(state, seat) {
+  if (!state.fog || state.phase === 'over') return null;
+  const out = new Set();
+  if (seat === null) return out;
+  const allies = new Set((state.pacts ?? []).filter((x) => x.a === seat || x.b === seat).map((x) => (x.a === seat ? x.b : x.a)));
+  for (const t of IDS) if (state.owner[t] === seat || allies.has(state.owner[t])) { out.add(t); for (const n of TERRITORY[t].neighbors) out.add(n); }
+  return out;
+}
+
+// Alla ställen där en mottagare fick ett antal den inte ska se (och där den inte fick det den ska se).
+function fogLeaks(msgs, seat) {
+  const out = [];
+  let prev = null;
+  for (const m of msgs) {
+    if (!m.state || !['start', 'game', 'events', 'reject'].includes(m.t)) continue;
+    const st = m.state;
+    const vis = seen(st, seat);
+    for (const t of IDS) {
+      const hidden = vis && !vis.has(t);
+      if (hidden && st.armies[t] !== null) out.push(`${m.t}#${m.seq} state.armies.${t}`);
+      if (!hidden && !Number.isInteger(st.armies[t])) out.push(`${m.t}#${m.seq} saknar state.armies.${t}`);
+    }
+    if (vis && st.occupy && !vis.has(st.occupy.from) && st.occupy.max !== null) out.push(`${m.t}#${m.seq} occupy.max`);
+    if (m.t === 'events' && prev) {
+      const a = seen(prev, seat), b = vis;
+      const u = a && b ? new Set([...a, ...b]) : null;
+      const see = (t) => !u || u.has(t);
+      for (const e of m.events) {
+        if (e.type === 'place' && !see(e.territory) && e.n !== null) out.push(`events#${m.seq} place.n ${e.territory}`);
+        if (e.type === 'battle' && !see(e.from) && e.armies.from !== null) out.push(`events#${m.seq} battle.armies.from ${e.from}`);
+        if (e.type === 'battle' && !see(e.to) && e.armies.to !== null) out.push(`events#${m.seq} battle.armies.to ${e.to}`);
+        if ((e.type === 'occupy' || e.type === 'fortify') && !see(e.from) && !see(e.to) && e.n !== null) out.push(`events#${m.seq} ${e.type}.n`);
+      }
+    }
+    prev = st;
+  }
+  return out;
+}
+
+async function fogWar(leak, untilOver) {
+  const srv = await serve({ port: 0, dbPath: join(dir, `fog-${leak ?? 'none'}.db`), aiDelay: 0, log: quiet, rate: fast, fogLeak: leak });
+  const A = await Client.connect(srv.port);
+  const B = await Client.connect(srv.port);
+  const C = await Client.connect(srv.port);
+  const created = await A.request({
+    t: 'create', options: { fog: true },
+    seats: [{ kind: 'human', faction: 'red' }, { kind: 'human', faction: 'blue' }, { kind: 'ai', faction: 'green', ai: 'aggressive' }, { kind: 'ai', faction: 'yellow' }],
+  });
+  assert.equal(created.options.fog, true);
+  const code = created.code;
+  await B.request({ t: 'join', code });
+  await C.request({ t: 'watch', code });
+  const truth = () => { const g = srv.games.byCode(code); return { state: g.state, seq: g.seq }; };
+  const pa = autopilot(A, code, 0, truth), pb = autopilot(B, code, 1, truth);
+  A.send({ t: 'start', code });
+  if (untilOver) await C.wait(victory, 120000);
+  else await C.wait((m) => m.t === 'events' && m.seq >= 120, 60000);
+  pa.stop(); pb.stop();
+  await Promise.all([A, B, C].map((x) => x.request({ t: 'ping' })));
+  return { srv, code, A, B, C };
+}
+
+test('krigsdimma: planterade läckor i läget och i händelserna fälls av kontrollen', async () => {
+  for (const leak of ['state', 'battle']) {
+    const { srv, A, B, C } = await fogWar(leak, false);
+    const found = [...fogLeaks(A.msgs, 0), ...fogLeaks(B.msgs, 1), ...fogLeaks(C.msgs, null)];
+    assert.ok(found.length > 0, `den planterade läckan '${leak}' måste fällas`);
+    assert.ok(found.some((x) => (leak === 'state' ? /state\.armies/ : /battle\.armies/).test(x)), `läckan '${leak}' ska synas som sådan`);
+    await srv.close();
+  }
+});
+
+test('krigsdimma: ingen ser arméer den inte ska se, varken i läget, händelserna eller historiken', async () => {
+  const { srv, code, A, B, C } = await fogWar(null, true);
+  assert.deepEqual(fogLeaks(A.msgs, 0), []);
+  assert.deepEqual(fogLeaks(B.msgs, 1), []);
+  assert.deepEqual(fogLeaks(C.msgs, null), []);
+  // spelarna ser en del av kartan, inte allt och inte inget (annars prövar kontrollen ingenting)
+  for (const [x, seat] of [[A, 0], [B, 1]]) {
+    const m = x.msgs.find((y) => y.t === 'events' && y.seq === 50);
+    const hidden = IDS.filter((t) => m.state.armies[t] === null).length;
+    assert.ok(hidden > 0 && hidden < IDS.length, `plats ${seat} ser ${IDS.length - hidden} av ${IDS.length}`);
+    assert.ok(IDS.filter((t) => m.state.owner[t] === seat).every((t) => Number.isInteger(m.state.armies[t])));
+  }
+  // åskådaren såg ägandet men inga arméer så länge kriget pågick
+  const mid = C.msgs.find((m) => m.t === 'events' && m.seq === 50);
+  assert.ok(IDS.every((t) => Number.isInteger(mid.state.owner[t]) && mid.state.armies[t] === null));
+  const before = C.msgs.filter((m) => m.t === 'events' && !victory(m)).flatMap((m) => m.events).filter((e) => e.type === 'battle');
+  assert.ok(before.length > 50 && before.every((e) => e.armies.to === null && e.armies.from === null), 'före segern syns inga antal i slagen');
+  // efter kriget ser alla allt
+  const end = C.msgs.find(victory);
+  assert.ok(IDS.every((t) => Number.isInteger(end.state.armies[t])));
+  // historiken är redigerad likadant som det levande flödet medan kriget pågår (räknas om ur loggen)
+  const g = srv.games.byCode(code);
+  g.status = 'active';                                  // låtsas att kriget pågår: historiken redigeras då
+  const live = new Map(A.msgs.filter((m) => m.t === 'events').map((m) => [m.seq, m.events]));
+  const h = srv.games.history(code, 0, 200, { id: g.seats[0].player });
+  assert.equal(h.moves.length, 200);
+  for (const mv of h.moves) assert.deepEqual(mv.events, live.get(mv.seq), `historiken för drag ${mv.seq}`);
+  const hs = srv.games.history(code, 0, 200, null);
+  assert.ok(hs.moves.flatMap((m) => m.events).filter((e) => e.type === 'battle').every((e) => e.armies.from === null && e.armies.to === null));
+  g.status = 'over';
 });

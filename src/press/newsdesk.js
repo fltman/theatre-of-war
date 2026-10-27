@@ -95,18 +95,19 @@ export class Newsdesk {
           const key = ev.from + '|' + ev.to;
           if (this.engagement && this.engagement.key !== key) closeEngagement();
           if (!this.engagement) {
+            const known = (n, loss) => (n == null ? null : n + loss);
             this.engagement = {
               key, from: ev.from, to: ev.to, attacker: ev.player, defender: ev.defender,
-              startA: ev.armies.from + ev.losses.a, startD: ev.armies.to + ev.losses.d, lossA: 0, lossD: 0, rolls: 0,
+              startA: known(ev.armies?.from, ev.losses.a), startD: known(ev.armies?.to, ev.losses.d), lossA: 0, lossD: 0, rolls: 0,
             };
           }
           const e = this.engagement;
           e.lossA += ev.losses.a;
           e.lossD += ev.losses.d;
           e.rolls++;
-          e.endA = ev.armies.from;
-          e.endD = ev.armies.to;
-          if (ev.armies.from <= 1 && ev.armies.to > 0) closeEngagement(); // angriparen kan inte fortsätta
+          e.endA = ev.armies?.from ?? null;
+          e.endD = ev.armies?.to ?? null;
+          if (e.endA != null && e.endA <= 1 && e.endD > 0) closeEngagement(); // angriparen kan inte fortsätta
           break;
         }
         case 'conquer': {
@@ -148,6 +149,12 @@ export class Newsdesk {
           break;
         case 'betrayal':
           this.betrayal = { ev, from: null, to: null };
+          break;
+        // månadens världshändelse (före månadens första turn)
+        case 'worldEvent':
+          this.worldNow = { round: ev.round ?? this.round + 1, ev };
+          // Månadens anslag: egen förstasida utanför tidningsbudgeten, så att krigets stora nyheter inte trängs ut.
+          items.push({ kind: 'world', round: ev.round ?? this.round + 1, world: ev, priority: 58, media: ['paper'], free: true });
           break;
         default:
           break;
@@ -257,6 +264,7 @@ export class Newsdesk {
   rankBase(it) {
     if (it.kind === 'trade') return Object.assign(it, { priority: 35, media: ['radio'] });
     if (it.kind === 'betrayal') return Object.assign(it, { lead: 'betrayal', priority: 88, media: ['paper', 'radio'] });
+    if (it.kind === 'world') return it;
     if (it.kind !== 'conquer') return it;
     const big = it.eng.lossA + it.eng.lossD >= BIG_FIGHT;
     if (it.victory) Object.assign(it, { lead: 'victory', priority: 100, media: ['paper'] });
@@ -410,6 +418,11 @@ export class Newsdesk {
       held: it.held || 0, value: it.value || 0,
     };
     c.A = c.F;
+    // Krigsdimma: i sidans tidning nämns inga styrkor där sidan inte ser (egna slag ser man alltid).
+    if (this.state?.fog && this.perspective != null && it.player !== this.perspective && it.defender !== this.perspective && T) {
+      const vis = this.visibleTo(this.perspective);
+      if (!(vis.has(it.to) && (!it.from || vis.has(it.from)))) Object.assign(c, { startA: null, startD: null, ratio: null, fogged: true });
+    }
     if (T) {
       const owner = this.state?.owner || {};
       const nb = TERRITORY[it.to].neighbors;
@@ -441,6 +454,7 @@ export class Newsdesk {
       landing: () => this.writeConquer(it, medium, 'landing'),
       final: () => this.writeConquer(it, medium, 'final'),
       pact: () => this.writePact(it, medium),
+      world: () => this.writeWorld(it, medium),
       betrayal: () => (it.kind === 'conquer' ? this.writeConquer(it, medium, 'betrayal') : this.writeBetrayal(it, medium)),
     }[lead];
     if (!writer) return null;
@@ -473,6 +487,8 @@ export class Newsdesk {
     const columns = [];
     const wires = this.wire.splice(0, 3);
     while (wires.length < 2) wires.push(this.pick('filler', K.FILLER_WIRES));
+    const w = this.worldNow;
+    if (w && w.round === c.round && !c.isWorld) columns.push({ title: 'This Month', text: this.worldRule(w.ev), kind: 'rule' });
     columns.push({ title: 'News in Brief', text: wires.join('\n') });
     columns.push({ title: this.perspective != null ? 'The Score' : 'The War in Figures', text: this.standings() });
     columns.push(this.random() < 0.5
@@ -849,6 +865,90 @@ export class Newsdesk {
         outcome: this.say('n.close'),
       },
     });
+  }
+
+  // Vad en sida ser under krigsdimma (kontraktet): egna territorier, grannarna till egna och pakt-partners territorier.
+  visibleTo(seat) {
+    const owner = this.state?.owner || {};
+    const allies = new Set((this.state?.pacts || []).filter((x) => x.a === seat || x.b === seat).map((x) => (x.a === seat ? x.b : x.a)));
+    const vis = new Set();
+    for (const [t, o] of Object.entries(owner)) {
+      if (o === seat) {
+        vis.add(t);
+        for (const n of TERRITORY[t].neighbors) vis.add(n);
+      } else if (allies.has(o)) vis.add(t);
+    }
+    return vis;
+  }
+
+  // ---------------------------------------------------------------- månadens världshändelse
+
+  worldCtx(ev) {
+    const owner = this.state?.owner || {};
+    const T = ev.territory ? this.territory(ev.territory, 'world:' + ev.territory) : null;
+    return {
+      id: ev.id,
+      C: ev.continent ? { ...CONTINENT[ev.continent] } : null,
+      T,
+      S: ev.player != null ? this.faction(ev.player) : null,
+      holder: T && owner[ev.territory] != null ? this.faction(owner[ev.territory]) : null,
+      holderIdx: T ? owner[ev.territory] : null,
+    };
+  }
+
+  worldRule(ev) {
+    const f = K.WORLD_RULE[ev.id];
+    return f ? f({ W: this.worldCtx(ev) }) : '';
+  }
+
+  worldFocus(ev) {
+    if (ev.id === 'winter') return ['ural', 'siberia', 'yakutsk', 'irkutsk', 'kamchatka', 'mongolia'];
+    if (ev.id === 'heat') return CONTINENT.africa.territories;
+    if (ev.id === 'harvest' && ev.continent) return CONTINENT[ev.continent].territories;
+    if (ev.id === 'oil' && ev.territory) return [ev.territory];
+    return [];
+  }
+
+  writeWorld(it, medium) {
+    const ev = it.world;
+    const set = K.WORLD[ev.id];
+    if (!set) return null;
+    this.dayRound = it.round;          // månadens första dagar
+    this.day = 0;
+    const d = this.dated(it);
+    const W = this.worldCtx(ev);
+    const rule = this.worldRule(ev);
+    const c = { round: it.round, ...d, W, T: null, isWorld: true };
+    const focus = { territories: this.worldFocus(ev), players: ev.player != null ? [ev.player] : W.holderIdx != null ? [W.holderIdx] : [] };
+    // Inga röstade väderrepliker än: radioreserven är allmän och märkt som sådan.
+    const radio = { ...this.spare(true, () => this.radio([this.say('open.news'), this.say('color'), this.say('close')])), generic: true };
+    const out = { date: d.date, focus, radio, rule, worldId: ev.id };
+    if (medium !== 'paper') return out;
+    const P = (key, list, cc = c) => this.pick(key, list, cc);
+    let headline = P(`world.h.${ev.id}`, set.headline);
+    let deck = P(`world.d.${ev.id}`, set.deck);
+    if (this.perspective != null) {
+      const U = this.faction(this.perspective);
+      const ownsIn = W.C && W.C.territories.some((t) => this.state?.owner?.[t] === this.perspective);
+      const rel = ev.id === 'strike' ? (ev.player === this.perspective ? 'lost' : 'others')
+        : ev.id === 'oil' ? (W.holderIdx === this.perspective ? 'ours' : 'others')
+          : ev.id === 'harvest' ? (ownsIn ? 'ours' : 'others') : 'any';
+      const spin = S.WORLD[ev.id]?.[rel];
+      if (spin) {
+        const sc = { ...c, U };
+        headline = P(`spin.world.h.${ev.id}.${rel}`, spin.headline, sc);
+        deck = P(`spin.world.d.${ev.id}.${rel}`, spin.deck, sc);
+      }
+    }
+    out.paper = this.paper(c, {
+      headline, deck,
+      kicker: P('world.k', K.WORLD.kicker),
+      body: [...set.body.map((t) => (typeof t === 'function' ? t(c) : t)), P('world.q', K.WORLD.quote)],
+      caption: 'Conditions at the front this month. (AW wirephoto)',
+    });
+    out.paper.rule = rule;
+    out.paper.dateline = undefined;
+    return out;
   }
 
   writeStart(it, medium) {

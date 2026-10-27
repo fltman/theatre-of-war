@@ -1,0 +1,45 @@
+/* Telegrafen: fjärrskrivarremsor i övre vänstra hörnet och telegramformuläret. Variablerna kommer från style.css. */
+.tg { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; z-index: 5; max-width: min(360px, 70vw); }
+.tg > * { pointer-events: auto; }
+.tg-btn { font-family: var(--type); font-size: 13px; background: var(--paper); color: var(--ink); border: none; padding: 7px 11px; cursor: pointer; box-shadow: 0 2px 8px var(--shadow), inset 0 0 14px rgba(120, 90, 40, 0.25); transform: rotate(-1deg); letter-spacing: 0.04em; }
+.tg-btn:hover { background: var(--paper-dark); }
+
+.tg-tapes { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+/* remsan: smalt gulnat papper med hålrad längs överkanten, maskinskriven text i versaler */
+.tg-tape { position: relative; background: #f1e6c0; color: #1d150c; font-family: var(--type); font-size: 14px; letter-spacing: 0.08em; line-height: 1.35;
+  padding: 12px 14px 8px; box-shadow: 0 3px 10px var(--shadow), inset 0 0 16px rgba(140, 110, 50, 0.25); border-left: 5px solid var(--c, #888);
+  transform: translateX(-24px) rotate(-0.6deg); opacity: 0; transition: transform 0.45s cubic-bezier(.2,.9,.3,1.1), opacity 0.4s ease; max-width: 100%; cursor: pointer;
+  background-image: radial-gradient(circle at 6px 5px, rgba(60, 45, 25, 0.35) 1.6px, transparent 2px); background-size: 12px 10px; background-repeat: repeat-x; }
+.tg-tape.in { transform: none; opacity: 1; }
+.tg-tape.out { opacity: 0; transform: translateY(-8px) rotate(-1.5deg); }
+.tg-tape.pinned { outline: 1px dashed rgba(36, 26, 16, 0.5); outline-offset: 2px; }
+.tg-head { display: flex; gap: 6px; align-items: center; font-size: 10px; letter-spacing: 0.12em; opacity: 0.7; margin-bottom: 3px; }
+.tg-chip { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(36, 26, 16, 0.6); flex: none; }
+.tg-body { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.35em; }
+
+/* formuläret */
+.tg-modal { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(11, 9, 7, 0.55); z-index: 30; pointer-events: auto; }
+.tg-form { background: #f3e8c4; width: min(460px, 94vw); padding: 22px 24px 18px; font-family: var(--type); color: #1d150c;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6), inset 0 0 50px rgba(140, 110, 50, 0.3); transform: rotate(-0.8deg); border-top: 6px double rgba(120, 40, 20, 0.6); }
+.tg-co { font-size: 11px; letter-spacing: 0.22em; text-align: center; opacity: 0.75; }
+.tg-title { font-family: var(--stencil); font-weight: 700; font-size: 30px; letter-spacing: 0.3em; text-align: center; margin: 2px 0 14px; color: var(--red); }
+.tg-row { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: start; margin: 8px 0; font-size: 12px; letter-spacing: 0.14em; }
+.tg-row > span { padding-top: 7px; }
+.tg-form select, .tg-form textarea { font-family: var(--type); font-size: 15px; background: rgba(255, 255, 255, 0.35); border: none; border-bottom: 1.5px solid var(--ink); padding: 6px 4px; color: var(--ink); width: 100%; letter-spacing: 0.06em; }
+.tg-form select:focus, .tg-form textarea:focus { outline: none; background-color: rgba(255, 255, 255, 0.6); border-bottom-color: var(--red); }
+.tg-form textarea { resize: none; text-transform: uppercase; background-image: repeating-linear-gradient(transparent, transparent 25px, rgba(36,26,16,0.2) 26px); line-height: 26px; }
+.tg-count { text-align: right; font-size: 11px; opacity: 0.6; }
+.tg-phrases { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 4px; }
+.tg-phrase { font-family: var(--type); font-size: 11px; letter-spacing: 0.05em; background: transparent; border: 1px dashed rgba(36, 26, 16, 0.55); padding: 4px 7px; cursor: pointer; color: var(--ink); }
+.tg-phrase:hover { background: rgba(36, 26, 16, 0.08); }
+.tg-err { color: var(--red); font-size: 13px; margin: 8px 0 0; }
+.tg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.tg-actions button { font-family: var(--type); font-size: 15px; padding: 8px 14px; background: transparent; border: 1.5px solid var(--ink); color: var(--ink); cursor: pointer; }
+.tg-actions button.primary { background: var(--ink); color: #f3e8c4; }
+.tg-actions button:disabled { opacity: 0.5; cursor: default; }
+
+@media (max-width: 700px) {
+  .tg { max-width: 64vw; top: max(52px, calc(env(safe-area-inset-top) + 44px)); }
+  .tg-tape { font-size: 12px; padding: 10px 10px 6px; }
+  .tg-btn { font-size: 12px; padding: 6px 9px; }
+}

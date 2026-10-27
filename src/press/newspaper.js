@@ -35,7 +35,7 @@ function paragraph(text, cls) {
 }
 
 function box(col) {
-  const b = el('section', 'np-box');
+  const b = el('section', 'np-box' + (col.kind === 'rule' ? ' np-box-rule' : ''));
   b.append(el('h3', null, col.title));
   const lines = String(col.text || '').split('\n').filter(Boolean);
   if (lines.every((l) => l.includes('\t'))) {
@@ -85,6 +85,12 @@ function build(story, layout) {
   const h1 = el('h1', 'np-headline', p.headline);
   page.append(h1);
   page.append(el('p', 'np-deck', p.deck));
+  // Månadens regel (världshändelse): tidningen är där spelaren får veta den.
+  if (p.rule) {
+    const r = el('div', 'np-rulebox');
+    r.append(el('b', null, 'By order \u2014 this month: '), p.rule);
+    page.append(r);
+  }
   page.append(el('div', 'np-rule2'));
 
   const grid = el('div', 'np-grid');

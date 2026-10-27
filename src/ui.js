@@ -2,7 +2,7 @@
 // ask(state) -> Promise<action>; varje klick som blir ett drag löser löftet.
 import * as THREE from 'three';
 import { TERRITORY, CARDS } from '../shared/map.js';
-import { sets, path, pactBetween } from '../shared/engine.js';
+import { sets, path, pactBetween, canAttack, maxDice } from '../shared/engine.js';
 import { incoming, switchboard } from './diplomacy.js';
 import { monthOf } from './hud.js';
 
@@ -53,7 +53,8 @@ export class UI {
     const owner = this.state.players.find((p) => p.faction === st.owner[id]);
     const s2 = this.state;
     const deploying = this.resolve && s2.phase === 'reinforce' && s2.owner[id] === s2.turn && !(s2.mustTrade || s2.players[s2.turn].cards.length >= 5);
-    this.hud.setHover(`${TERRITORY[id].name} · ${st.armies[id]} · ${owner?.name ?? ''}${deploying ? ` <b class="plus">+1</b> <small>shift: all ${s2.pending}</small>` : ''}`, e.clientX, e.clientY);
+    const shown = this.director.hidden(id) || st.armies[id] == null ? '?' : st.armies[id];
+    this.hud.setHover(`${TERRITORY[id].name} · ${shown} · ${owner?.name ?? ''}${deploying ? ` <b class="plus">+1</b> <small>shift: all ${s2.pending}</small>` : ''}`, e.clientX, e.clientY);
   }
 
   // Väntar på spelarens nästa drag.
@@ -84,6 +85,7 @@ export class UI {
     this.resolve = null;
     for (const id in this.board.meshes) this.board.mark(id, 'deploy', false);
     this.hud.panel.classList.add('hidden');
+    if (action && (action.type === 'endTurn' || action.type === 'fortify' || action.type === 'propose')) this.hud.hideHand();
     if (action && (action.type === 'endTurn' || action.type === 'fortify')) this.hud.stamp('ORDERS APPROVED');
     if (action && (action.type === 'endAttack')) this.hud.stamp('CEASE FIRE', 'small');
     r?.(action);
@@ -135,13 +137,16 @@ export class UI {
     }
     if (st.phase === 'attack') {
       if (mine) {
-        const foes = TERRITORY[id].neighbors.filter((n) => st.owner[n] !== me);
+        const foes = TERRITORY[id].neighbors.filter((n) => st.owner[n] !== me && canAttack(st, id, n));
         if (st.armies[id] < 2 || !foes.length) { this.deselect(); this.render(); return; }
         this.select(id, foes);
         this.render();
         return;
       }
-      if (this.sel && TERRITORY[this.sel].neighbors.includes(id)) { this.target = id; this.render(); }
+      if (this.sel && TERRITORY[this.sel].neighbors.includes(id)) {
+        if (!canAttack(st, this.sel, id)) { this.hud.toast('Gales at sea: no crossings by sea this month'); return; }
+        this.target = id; this.render();
+      }
       return;
     }
     if (st.phase === 'fortify') {
@@ -200,8 +205,8 @@ export class UI {
       if (kids.length) P.append(row(...kids));
     } else if (st.phase === 'attack') {
       if (this.sel && this.target) {
-        const a = st.armies[this.sel], d = st.armies[this.target];
-        const dice = Math.min(3, a - 1);
+        const a = st.armies[this.sel], d = this.director.hidden(this.target) ? '?' : st.armies[this.target];
+        const dice = Math.min(maxDice(st, this.sel, this.target), a - 1);
         P.append(title(`<b>${TERRITORY[this.sel].name}</b> (${a}) → <b>${TERRITORY[this.target].name}</b> (${d})`));
         const pact = pactBetween(st, st.turn, st.owner[this.target]);
         if (pact) P.append(title(`<span class="betray">⚠ You have a pact with this power until the end of ${monthOf(pact.until)}. Attacking breaks it — the papers will call it betrayal.</span>`));
