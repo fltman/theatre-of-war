@@ -213,10 +213,23 @@ export class Director {
     else this.audio?.phoneVoice(ms);
   }
 
+  // Telefonscenerna där en människa vid skärmen är inblandad spelas alltid i normalt tempo: ett klick på kartan
+  // ("hoppa över") eller tempot "Headlines only" får inte svälja svaret i luren.
+  async calm(fn) {
+    const prev = speed.factor, skipping = this.skipping;
+    speed.factor = 1; this.skipping = false;
+    try { return await fn(); } finally { speed.factor = skipping ? 60 : prev; }
+  }
+
   async phoneCall(e, state) {
     const mineTo = this.isLocal(state, e.to), mineFrom = this.isLocal(state, e.from);
     const P = this.props;
-    if (!(mineTo || mineFrom) || this.instant || !P?.phone) return;
+    if (!(mineTo || mineFrom) || !P?.phone) return;
+    return this.calm(() => this.phoneCallScene(e, state, mineFrom));
+  }
+
+  async phoneCallScene(e, state, mineFrom) {
+    const P = this.props;
     this.phoneBack = { pos: this.world.camera.position.clone(), target: this.world.controls.target.clone() };
     const S = P.phoneShot();
     await this.rig.fly(S.from, S.target, 1.2, { fov: 30 });
@@ -240,13 +253,19 @@ export class Director {
   }
 
   async phoneAnswer(e, state) {
+    const from = e.type === 'pact' ? e.a : e.from, to = e.type === 'pact' ? e.b : e.to;
+    if (this.isLocal(state, from) || this.isLocal(state, to)) return this.calm(() => this.phoneAnswerScene(e, state));
+    return this.phoneAnswerScene(e, state);
+  }
+
+  async phoneAnswerScene(e, state) {
     const A = FACTION[this.faction(state, e.type === 'pact' ? e.a : e.from)].army;
     const B = FACTION[this.faction(state, e.type === 'pact' ? e.b : e.to)].army;
     const from = e.type === 'pact' ? e.a : e.from;
     const P = this.props;
     this.audio?.stop('ringback'); this.audio?.stop('ring'); P?.ring(false);
-    const local = this.phoneBack && !this.instant;
-    if (local && this.isLocal(state, from)) {
+    const local = !!this.phoneBack;
+    if (this.isLocal(state, from)) {                 // svaret på vårt eget samtal: alltid kort och röst
       // svaret i luren på vårt samtal
       this.audio?.play('pickup');
       const other = e.type === 'pact' ? e.b : e.to;
